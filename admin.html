@@ -221,9 +221,26 @@
     </article>`;
   }
 
+  // LINEで申請した患者さんには、確定・調整中・お断り・返信をLINEで届ける
+  async function notifyLine(body) {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const r = await fetch('https://qhdyktpgrmxeccnynixn.supabase.co/functions/v1/line-notify', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_uI5fDJgHzQqOmPDhy4jr_Q_QYSTBltu', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify(body) });
+      const j = await r.json().catch(() => ({}));
+      return j.sent ? 'sent' : (j.reason ? 'noline' : 'fail');
+    } catch { return 'fail'; }
+  }
   async function update(id, patch, msg) {
     const { error } = await sb.from('counseling_requests').update(patch).eq('id', id);
     if (error) { alert('保存できませんでした：' + error.message); return; }
+    if (patch.status && patch.status !== 'pending') {
+      const r = rows.find(x => x.id === id);
+      try { await sb.from('counseling_history').insert({ request_id: id, actor: `${ROLE_JP?.[me?.role] || ''} ${me?.display_name || me?.email}`.trim(), action: `${LABEL[patch.status]}${patch.confirmed_at ? '（' + fmt(patch.confirmed_at) + '）' : ''}` }); } catch {}
+      if (r?.line_user_id) {
+        const res = await notifyLine({ action: 'status', request_id: id });
+        msg += res === 'sent' ? '　患者さんのLINEにお知らせしました。' : '　※LINEへのお知らせに失敗しました。お電話でご連絡ください。';
+      } else if (patch.status === 'approved') msg += '　（Web・電話の予約なので、患者さんへ電話等でご連絡ください）';
+    }
     toast(msg);
   }
   document.addEventListener('click', async (e) => {
@@ -239,8 +256,9 @@
       if (!v) { alert('日時を入力してください'); return; }
       if (!assigned && !confirm('担当カウンセラーが未選択です。このまま確定しますか？')) return;
       const at = new Date(v).toISOString();
-      if (!confirm(`${fmt(at)} で確定します。よろしいですか？\n（確定後、患者さんへ電話またはメールでご連絡ください）`)) return;
-      return update(id, { status: 'approved', confirmed_at: at, assigned_counselor: assigned, decided_by: who, decided_at: new Date().toISOString() }, '確定しました。患者さんへご連絡ください。');
+      const rr = rows.find(x => x.id === id);
+      if (!confirm(`${fmt(at)} で確定します。よろしいですか？\n${rr?.line_user_id ? '（患者さんのLINEに確定のお知らせが届きます）' : '（確定後、患者さんへ電話等でご連絡ください）'}`)) return;
+      return update(id, { status: 'approved', confirmed_at: at, assigned_counselor: assigned, decided_by: who, decided_at: new Date().toISOString() }, '確定しました。');
     }
     if (act === 'thread') return openThread(id);
     if (act === 'memo') return update(id, { staff_note: document.querySelector(`[data-field="memo"][data-id="${id}"]`).value }, 'メモを保存しました');
@@ -282,9 +300,11 @@
   $('compose').onsubmit = async (e) => {
     e.preventDefault(); const body = $('cBody').value.trim(); if (!body || !openId) return;
     const role = ['counselor','reception','director'].includes(me?.role) ? me.role : 'reception';
-    const { error } = await sb.from('counseling_messages').insert({ request_id: openId, sender_type: role, sender_name: me?.display_name || me?.email, body });
+    const { data: m, error } = await sb.from('counseling_messages').insert({ request_id: openId, sender_type: role, sender_name: me?.display_name || me?.email, body }).select().single();
     if (error) { alert('送信できませんでした：' + error.message); return; }
     $('cBody').value = '';
+    const r = rows.find(x => x.id === openId);
+    if (r?.line_user_id) { const res = await notifyLine({ action: 'message', request_id: openId, message_id: m.id }); toast(res === 'sent' ? '患者さんのLINEに送りました' : 'LINEに送れませんでした。お電話でご連絡ください'); }
   };
 
   function renderCal() {
