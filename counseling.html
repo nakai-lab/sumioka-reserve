@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カウンセリングのご予約｜成城墨岡クリニック</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --deep:#4F6B4A; --soft:#E8EEE2; --bg:#FAF8F2; --ink:#3A3D34; --sub:#5F6356; --line:#DDE3D3; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--ink); line-height:1.8; }
+  header { background:#DCEDD6; padding:14px 20px; text-align:center; font-family:'Zen Old Mincho',serif; font-weight:700; font-size:20px; color:#2F4A2C; }
+  main { max-width:640px; margin:0 auto; padding:28px 18px 60px; }
+  h1 { font-family:'Zen Old Mincho',serif; font-size:28px; margin:0 0 6px; text-align:center; }
+  .lead { text-align:center; color:var(--sub); font-size:14px; margin:0 0 24px; }
+  .card { background:#fff; border-radius:22px; padding:24px; margin-bottom:16px; }
+  label { display:block; font-weight:700; font-size:14px; margin:14px 0 6px; }
+  .req { color:#fff; background:#9A4A4A; font-size:11px; border-radius:4px; padding:1px 6px; margin-left:6px; }
+  input, select, textarea { width:100%; font:inherit; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:#fff; min-height:48px; }
+  textarea { min-height:90px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .row > * { flex:1 1 200px; }
+  .choice { display:flex; gap:10px; flex-wrap:wrap; }
+  .choice label { flex:1 1 160px; margin:0; font-weight:500; border:1px solid var(--line); border-radius:12px; padding:12px; display:flex; gap:8px; align-items:center; cursor:pointer; }
+  .choice input { width:auto; min-height:auto; }
+  button { width:100%; min-height:56px; border:none; border-radius:999px; background:var(--deep); color:#fff; font:inherit; font-size:17px; font-weight:700; cursor:pointer; margin-top:8px; }
+  button:disabled { opacity:.6; }
+  .note { font-size:12px; color:var(--sub); }
+  .done { text-align:center; padding:40px 20px; }
+  .err { color:#9A4A4A; font-size:14px; margin-top:10px; }
+  .tabs { display:flex; gap:8px; margin-bottom:18px; }
+  .tabs button { margin:0; min-height:48px; font-size:15px; background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .tabs button[aria-pressed="true"] { background:var(--deep); color:#fff; border-color:var(--deep); }
+  .code { font-size:44px; letter-spacing:.3em; font-weight:700; color:var(--deep); background:var(--soft); border-radius:14px; padding:10px 18px; display:inline-block; margin:10px 0; }
+  .status { display:inline-block; padding:2px 12px; border-radius:999px; font-size:13px; font-weight:700; background:#FDF0D8; color:#7A5310; }
+  .status.approved { background:#E2F0E0; color:#2F5A2C; } .status.declined { background:#F5E1E1; color:#7A3030; }
+  .thread { display:flex; flex-direction:column; gap:10px; margin:14px 0; max-height:55vh; overflow:auto; padding:4px; }
+  .msg { max-width:82%; border-radius:16px; padding:10px 14px; font-size:14px; white-space:pre-wrap; word-break:break-word; }
+  .msg .who { display:block; font-size:11px; font-weight:700; margin-bottom:2px; }
+  .msg .time { display:block; font-size:10px; opacity:.7; margin-top:4px; text-align:right; }
+  .msg.patient { align-self:flex-end; background:#F2F7EF; border:1px solid #CFE0C8; }
+  .msg.counselor { align-self:flex-start; background:#fff; border:2px solid #4F6B4A; } .msg.counselor .who { color:#4F6B4A; }
+  .msg.reception { align-self:flex-start; background:#fff; border:2px solid #3E6C9C; } .msg.reception .who { color:#3E6C9C; }
+  .msg.director { align-self:flex-start; background:#fff; border:2px solid #8A5A6B; } .msg.director .who { color:#8A5A6B; }
+  .legend { display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--sub); }
+  .legend span::before { content:''; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; vertical-align:middle; background:var(--c); }
+</style>
+</head>
+<body>
+<header>成城墨岡クリニック</header>
+<main>
+  <div class="tabs" role="tablist">
+    <button type="button" id="tabNew" aria-pressed="true">予約を申請する</button>
+    <button type="button" id="tabMy" aria-pressed="false">予約の確認・メッセージ</button>
+  </div>
+  <section id="formView">
+    <h1>カウンセリングのご予約</h1>
+    <p class="lead">ご希望の日時を第3希望までお選びください。<br>担当者が確認のうえ、お電話またはメールで確定のご連絡をいたします。</p>
+    <form id="f" class="card" novalidate>
+      <label>ご来院について<span class="req">必須</span></label>
+      <div class="choice">
+        <label><input type="radio" name="visit_type" value="continuing" checked> カウンセリングを受けている</label>
+        <label><input type="radio" name="visit_type" value="new"> 初めてカウンセリングを希望</label>
+      </div>
+      <p class="note">※カウンセリングをご希望の方は、はじめに医師の診察が必要です（診察は予約不要）。</p>
+      <div class="row">
+        <div><label for="name">お名前<span class="req">必須</span></label><input id="name" name="patient_name" required maxlength="60" autocomplete="name"></div>
+        <div><label for="kana">フリガナ</label><input id="kana" name="patient_kana" maxlength="60"></div>
+      </div>
+      <div class="row">
+        <div><label for="phone">お電話番号<span class="req">必須</span></label><input id="phone" name="phone" type="tel" required maxlength="20" autocomplete="tel"></div>
+        <div><label for="email">メールアドレス</label><input id="email" name="email" type="email" maxlength="120" autocomplete="email"></div>
+      </div>
+      <label for="counselor">ご希望のカウンセラー</label>
+      <select id="counselor" name="preferred_counselor">
+        <option value="">指定なし</option>
+        <option>五味 新 先生</option><option>新井 みゆき 先生</option><option>市川 和代 先生</option>
+        <option>田中 康子 先生</option><option>山添 匠 先生</option><option>松本 清子 先生</option>
+        <option>阿部 友音 先生</option><option>山崎 美晴 先生</option>
+      </select>
+      <label for="w1">第1希望<span class="req">必須</span></label><input id="w1" name="wish1" type="datetime-local" required step="1800">
+      <label for="w2">第2希望</label><input id="w2" name="wish2" type="datetime-local" step="1800">
+      <label for="w3">第3希望</label><input id="w3" name="wish3" type="datetime-local" step="1800">
+      <label for="note">ご要望・ご質問</label><textarea id="note" name="note" maxlength="500" placeholder="例：平日の夕方以降を希望します"></textarea>
+      <p class="note">※症状などの詳しい内容は、カウンセリングの際に伺います。ここには書かなくて大丈夫です。<br>※ご入力いただいた情報は、ご予約の調整にのみ使用します。</p>
+      <button id="submit" type="submit">予約を申請する</button>
+      <p class="err" id="err" role="alert"></p>
+    </form>
+  </section>
+  <section id="doneView" class="card done" hidden>
+    <h1>申請を受け付けました</h1>
+    <p>あなたの予約番号は</p>
+    <div class="code" id="doneCode"></div>
+    <p><strong>この番号を必ず控えてください。</strong><br>「予約の確認・メッセージ」で、予約番号とお名前を入力すると、予約の状況確認や、日時変更などのメッセージのやり取りができます。</p>
+    <p class="note">ご予約はまだ確定していません。担当者が確認のうえ、ご連絡いたします。<br>お急ぎの方はお電話ください：03-3749-1122</p>
+    <button type="button" id="goMy">予約の確認・メッセージへ</button>
+  </section>
+  <section id="loginView" class="card" hidden>
+    <h1 style="font-size:22px">予約の確認・メッセージ</h1>
+    <p class="note" style="text-align:center">申請時に表示された予約番号と、お名前を入力してください。</p>
+    <form id="lf">
+      <label for="lcode">予約番号</label><input id="lcode" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" autocomplete="off" placeholder="4桁の数字" style="letter-spacing:.3em;font-size:22px">
+      <label for="lname">お名前（申請時と同じ）</label><input id="lname" maxlength="60" autocomplete="name">
+      <button type="submit">ログイン</button>
+      <p class="err" id="lerr" role="alert"></p>
+    </form>
+  </section>
+  <section id="myView" class="card" hidden>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <strong id="myName" style="font-size:18px"></strong><span id="myStatus" class="status"></span>
+    </div>
+    <dl id="myInfo" style="display:grid;grid-template-columns:96px 1fr;gap:4px 10px;font-size:14px;margin:12px 0"></dl>
+    <h2 style="font-family:'Zen Old Mincho',serif;font-size:18px;margin:18px 0 4px">メッセージ</h2>
+    <div class="legend"><span style="--c:#CFE0C8">あなた</span><span style="--c:#4F6B4A">カウンセラー</span><span style="--c:#3E6C9C">受付</span></div>
+    <div class="thread" id="thread"></div>
+    <form id="mf">
+      <label for="mbody">クリニックへのメッセージ（日時の変更・キャンセルなど）</label>
+      <textarea id="mbody" maxlength="1000" placeholder="例：12/3の予約を、12/10の同じ時間に変更できますか？"></textarea>
+      <button type="submit" id="msend">送信する</button>
+      <p class="note">※カウンセラーと受付の両方に届きます。返信までお時間をいただく場合があります。<br>※緊急の場合はお電話ください：03-3749-1122</p>
+    </form>
+    <button type="button" id="lout" style="background:#fff;color:var(--ink);border:1px solid var(--line)">ログアウト</button>
+  </section>
+</main>
+<script>
+  const API = 'https://qhdyktpgrmxeccnynixn.supabase.co/functions/v1/patient-portal';
+  const KEY = 'sb_publishable_uI5fDJgHzQqOmPDhy4jr_Q_QYSTBltu';
+  const call = async (body) => { const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); return { ok: r.ok, status: r.status, ...j }; };
+  const $ = id => document.getElementById(id);
+  const fmt = iso => { if (!iso) return '—'; const d = new Date(iso); return `${d.getMonth()+1}月${d.getDate()}日(${'日月火水木金土'[d.getDay()]}) ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+  const ROLE = { patient: 'あなた', counselor: 'カウンセラー', reception: '受付', director: '院長' };
+  const STATUS = { pending: '確認中', adjusting: '日時を調整中', approved: '予約確定', declined: 'お受けできませんでした', cancelled: 'キャンセル' };
+  let cred = null, timer = null;
+  const views = ['formView','doneView','loginView','myView'];
+  const show = v => { views.forEach(x => $(x).hidden = x !== v); $('tabNew').setAttribute('aria-pressed', v === 'formView' || v === 'doneView'); $('tabMy').setAttribute('aria-pressed', v === 'loginView' || v === 'myView'); };
+  $('tabNew').onclick = () => show('formView');
+  $('tabMy').onclick = () => show(cred ? 'myView' : 'loginView');
+  $('goMy').onclick = () => { $('lcode').value = $('doneCode').textContent; show('loginView'); };
+
+  const min = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  ['w1','w2','w3'].forEach(id => $(id).min = min);
+  const iso = v => v ? new Date(v).toISOString() : null;
+  const f = $('f'), err = $('err'), btn = $('submit');
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault(); err.textContent = '';
+    const fd = new FormData(f);
+    if (!fd.get('patient_name') || !fd.get('phone') || !fd.get('wish1')) { err.textContent = 'お名前・お電話番号・第1希望を入力してください。'; return; }
+    btn.disabled = true; btn.textContent = '送信中…';
+    const res = await call({ action: 'submit', visit_type: fd.get('visit_type'), patient_name: fd.get('patient_name'), patient_kana: fd.get('patient_kana'), phone: fd.get('phone'), email: fd.get('email'), preferred_counselor: fd.get('preferred_counselor'), wish1: iso(fd.get('wish1')), wish2: iso(fd.get('wish2')), wish3: iso(fd.get('wish3')), note: fd.get('note') });
+    btn.disabled = false; btn.textContent = '予約を申請する';
+    if (!res.ok || !res.access_code) { err.textContent = '送信できませんでした。時間をおいて再度お試しいただくか、お電話ください。'; return; }
+    $('doneCode').textContent = res.access_code; $('lname').value = fd.get('patient_name'); f.reset(); show('doneView'); window.scrollTo(0, 0);
+  });
+
+  function renderMy(d) {
+    const r = d.reservation;
+    $('myName').textContent = r.patient_name + ' 様';
+    $('myStatus').textContent = STATUS[r.status] || r.status; $('myStatus').className = 'status ' + r.status;
+    const rows = [['予約番号', r.access_code]];
+    if (r.status === 'approved') { rows.push(['確定日時', fmt(r.confirmed_at)]); if (r.assigned_counselor) rows.push(['担当', r.assigned_counselor + ' 先生']); }
+    else { rows.push(['第1希望', fmt(r.wish1)]); if (r.wish2) rows.push(['第2希望', fmt(r.wish2)]); if (r.wish3) rows.push(['第3希望', fmt(r.wish3)]); }
+    $('myInfo').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'); dt.textContent = k; dt.style.color = 'var(--sub)'; const dd = document.createElement('dd'); dd.textContent = v; dd.style.margin = '0'; return [dt, dd]; }));
+    const th = $('thread'); const atBottom = th.scrollTop + th.clientHeight >= th.scrollHeight - 20;
+    th.replaceChildren(...(d.messages.length ? d.messages.map(m => {
+      const el = document.createElement('div'); el.className = 'msg ' + m.sender_type;
+      const who = document.createElement('span'); who.className = 'who'; who.textContent = m.sender_type === 'patient' ? 'あなた' : `${ROLE[m.sender_type]}　${m.sender_name}`;
+      const body = document.createElement('span'); body.textContent = m.body;
+      const t = document.createElement('span'); t.className = 'time'; t.textContent = fmt(m.created_at) + (m.sender_type === 'patient' ? (m.staff_read_at ? '　既読' : '　未読') : '');
+      el.append(who, body, t); return el;
+    }) : [Object.assign(document.createElement('p'), { className: 'note', textContent: 'まだメッセージはありません。' })]));
+    if (atBottom) th.scrollTop = th.scrollHeight;
+  }
+  async function refresh() { if (!cred) return; const d = await call({ action: 'thread', ...cred }); if (d.ok) renderMy(d); }
+  $('lf').addEventListener('submit', async (e) => {
+    e.preventDefault(); $('lerr').textContent = '';
+    const c = { code: $('lcode').value.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/\D/g, ''), name: $('lname').value.trim() };
+    const d = await call({ action: 'login', ...c });
+    if (!d.ok) { $('lerr').textContent = d.status === 429 ? '入力の誤りが続いたため、15分ほどロックしています。時間をおいてお試しいただくか、お電話ください。' : '予約番号またはお名前が一致しません。'; return; }
+    cred = c; renderMy(d); show('myView'); $('thread').scrollTop = 1e9;
+    clearInterval(timer); timer = setInterval(refresh, 20000);
+  });
+  $('mf').addEventListener('submit', async (e) => {
+    e.preventDefault(); const body = $('mbody').value.trim(); if (!body) return;
+    $('msend').disabled = true; const r = await call({ action: 'message', ...cred, body }); $('msend').disabled = false;
+    if (!r.ok) { alert(r.status === 429 ? '送信回数が多すぎます。しばらくしてからお試しください。' : '送信できませんでした。'); return; }
+    $('mbody').value = ''; await refresh(); $('thread').scrollTop = 1e9;
+  });
+  $('lout').onclick = () => { cred = null; clearInterval(timer); $('lcode').value = ''; show('loginView'); };
+</script>
+</body>
+</html>

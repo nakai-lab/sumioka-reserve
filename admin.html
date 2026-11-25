@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カウンセリング予約 管理｜成城墨岡クリニック</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#4F6B4A">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --deep:#4F6B4A; --soft:#E8EEE2; --bg:#F5F6F1; --ink:#2E332B; --sub:#5F6356; --line:#DDE3D3; --warn:#9A6A1F; --ng:#9A4A4A; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--ink); font-size:14px; line-height:1.6; }
+  header { background:var(--deep); color:#fff; padding:12px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  header h1 { margin:0; font-family:'Zen Old Mincho',serif; font-size:18px; }
+  header .sp { flex:1; }
+  header button { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.35); }
+  button { font:inherit; min-height:40px; padding:0 14px; border-radius:10px; border:1px solid var(--line); background:#fff; cursor:pointer; font-weight:700; }
+  .primary { background:var(--deep); color:#fff; border-color:var(--deep); }
+  .warn { color:var(--warn); border-color:var(--warn); }
+  .ng { color:var(--ng); border-color:var(--ng); }
+  .wrap { max-width:1200px; margin:0 auto; padding:18px; }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .tabs button[aria-pressed="true"] { background:var(--deep); color:#fff; border-color:var(--deep); }
+  .badge { display:inline-block; min-width:22px; padding:0 6px; border-radius:999px; background:#E7EFE3; color:var(--deep); font-size:12px; margin-left:6px; }
+  .tabs button[aria-pressed="true"] .badge { background:#fff; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:12px; }
+  .card { background:#fff; border-radius:16px; padding:16px; border:1px solid var(--line); }
+  .card.new { border:2px solid #E2A33B; }
+  .meta { display:flex; justify-content:space-between; color:var(--sub); font-size:12px; }
+  .name { font-size:18px; font-weight:700; margin:4px 0; }
+  .st { font-size:12px; font-weight:700; padding:2px 10px; border-radius:999px; }
+  .st-pending { background:#FDF0D8; color:#7A5310; } .st-adjusting { background:#EFE8D8; color:#6A5420; }
+  .st-approved { background:#E2F0E0; color:#2F5A2C; } .st-declined { background:#F5E1E1; color:#7A3030; } .st-cancelled { background:#EEE; color:#555; }
+  dl { display:grid; grid-template-columns:90px 1fr; gap:2px 8px; margin:8px 0; }
+  dt { color:var(--sub); } dd { margin:0; word-break:break-all; }
+  .wishes { display:flex; flex-direction:column; gap:6px; margin:10px 0; }
+  .wishes button { text-align:left; }
+  .controls { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  select, input, textarea { font:inherit; border:1px solid var(--line); border-radius:10px; padding:8px 10px; min-height:40px; width:100%; }
+  textarea { min-height:60px; }
+  .login { max-width:380px; margin:12vh auto; background:#fff; border-radius:20px; padding:28px; }
+  .login h2 { font-family:'Zen Old Mincho',serif; margin:0 0 14px; }
+  .login label { display:block; margin:10px 0 4px; font-weight:700; }
+  .empty { color:var(--sub); padding:40px; text-align:center; }
+  .notice { background:#FFF7E6; border:1px solid #F0D9A8; border-radius:12px; padding:10px 14px; margin-bottom:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .viewtabs { display:flex; gap:8px; margin-bottom:12px; }
+  .viewtabs button[aria-pressed="true"] { background:#2E332B; color:#fff; border-color:#2E332B; }
+  .msgbtn .unread { background:#C0392B; color:#fff; border-radius:999px; padding:0 7px; font-size:11px; margin-left:4px; }
+  .drawer { position:fixed; top:0; right:0; width:min(460px,100%); height:100vh; background:#fff; box-shadow:-10px 0 30px rgba(0,0,0,.15); display:flex; flex-direction:column; z-index:20; }
+  .drawer header { background:#2E332B; }
+  .thread { flex:1; overflow:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:#F7F8F4; }
+  .bubble { max-width:85%; border-radius:14px; padding:9px 12px; white-space:pre-wrap; word-break:break-word; background:#fff; }
+  .bubble .who { display:block; font-size:11px; font-weight:700; margin-bottom:2px; }
+  .bubble .time { display:block; font-size:10px; color:#777; text-align:right; margin-top:3px; }
+  .bubble.patient { align-self:flex-start; border:2px solid #C9A227; } .bubble.patient .who { color:#8A6A10; }
+  .bubble.counselor { align-self:flex-end; border:2px solid #4F6B4A; } .bubble.counselor .who { color:#4F6B4A; }
+  .bubble.reception { align-self:flex-end; border:2px solid #3E6C9C; } .bubble.reception .who { color:#3E6C9C; }
+  .bubble.director { align-self:flex-end; border:2px solid #8A5A6B; } .bubble.director .who { color:#8A5A6B; }
+  .compose { padding:12px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:8px; }
+  .legend { display:flex; gap:10px; flex-wrap:wrap; font-size:11px; color:var(--sub); padding:8px 14px; border-bottom:1px solid var(--line); }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:3px; vertical-align:middle; }
+  .cal { background:#fff; border-radius:16px; border:1px solid var(--line); overflow:auto; }
+  .calgrid { display:grid; grid-template-columns:56px repeat(6, minmax(130px,1fr)); min-width:860px; position:relative; }
+  .calhead { position:sticky; top:0; background:#F2F4EE; font-weight:700; text-align:center; padding:8px 4px; border-bottom:1px solid var(--line); z-index:2; }
+  .calhead.today { background:#E2F0E0; color:#2F5A2C; }
+  .calcol { position:relative; border-left:1px solid var(--line); }
+  .hour { height:56px; border-bottom:1px dashed #E6E9E1; font-size:11px; color:#888; padding:2px 4px; }
+  .ev { position:absolute; left:4px; right:4px; border-radius:8px; padding:3px 6px; font-size:11px; line-height:1.35; overflow:hidden; cursor:pointer; border:none; text-align:left; font-weight:500; min-height:0; }
+  .ev.approved { background:#4F6B4A; color:#fff; }
+  .ev.wish { background:#FFF4DB; color:#7A5310; border:1.5px dashed #D49A2A; }
+  .ev.adjusting { background:#F1E9D6; color:#6A5420; border:1.5px dashed #9A7A3A; }
+  .toast { position:fixed; right:20px; bottom:20px; background:var(--deep); color:#fff; padding:14px 18px; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.2); display:none; }
+</style>
+</head>
+<body>
+<section id="loginView" class="login" hidden>
+  <h2>スタッフログイン</h2>
+  <p style="color:var(--sub);margin:0 0 8px">カウンセリング予約の管理画面です。</p>
+  <form id="loginForm">
+    <label for="em">ログインID</label><input id="em" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required placeholder="例：sumioka-uketuke">
+    <label for="pw">パスワード</label><input id="pw" type="password" autocomplete="current-password" required>
+    <button class="primary" style="width:100%;margin-top:16px" type="submit">ログイン</button>
+    <p id="loginErr" style="color:var(--ng)"></p>
+  </form>
+</section>
+
+<section id="appView" hidden>
+  <header>
+    <h1>カウンセリング予約 管理</h1>
+    <span id="who" style="font-size:12px;opacity:.9"></span>
+    <span class="sp"></span>
+    <button id="newBtn" type="button" style="background:#fff;color:#2E332B;font-weight:700">＋ 予約を入力</button>
+    <button id="staffBtn" type="button" hidden>スタッフ管理</button>
+    <button id="notifyBtn" type="button">通知をオンにする</button>
+    <button id="logout" type="button">ログアウト</button>
+  </header>
+  <div class="wrap">
+    <div id="installNote" class="notice" hidden>この画面はデスクトップに置けます：Chromeのアドレスバー右端の「インストール」ボタン（またはメニュー →「キャスト、保存、共有」→「ページをアプリとしてインストール」）。</div>
+    <div class="viewtabs"><button type="button" id="vList" aria-pressed="true">一覧</button><button type="button" id="vCal" aria-pressed="false">カレンダー</button></div>
+    <div id="listView"><div class="tabs" id="tabs"></div><div class="grid" id="list"></div></div>
+    <div id="calView" hidden>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+        <button type="button" id="calPrev">← 前の週</button><button type="button" id="calToday">今週</button><button type="button" id="calNext">次の週 →</button>
+        <strong id="calLabel" style="margin-left:8px"></strong>
+        <span style="margin-left:auto;font-size:12px;color:var(--sub)"><span style="display:inline-block;width:12px;height:12px;background:#4F6B4A;border-radius:3px;vertical-align:middle"></span> 確定　<span style="display:inline-block;width:12px;height:12px;background:#FFF4DB;border:1.5px dashed #D49A2A;border-radius:3px;vertical-align:middle"></span> 申請中の希望日時</span>
+      </div>
+      <div class="cal"><div class="calgrid" id="calgrid"></div></div>
+    </div>
+  </div>
+</section>
+<div class="toast" id="toast" role="status"></div>
+<aside class="drawer" id="newPanel" hidden aria-label="予約を入力">
+  <header><h1 style="font-size:16px">予約を入力（電話・窓口など）</h1><span class="sp"></span><button type="button" id="npClose">閉じる</button></header>
+  <form id="np" style="padding:14px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px">
+    <label>メニュー<select id="npMenu"><option value="counseling">カウンセリング</option><option value="director">自費治療　院長カウンセリング（30分・8,800円）</option><option value="wisc">小児の知能検査 WISC-V（約120分・18,000円税別）</option></select></label>
+    <label>お名前（WISC-Vはお子さまのお名前）<input id="npName" maxlength="60" required></label>
+    <label>フリガナ<input id="npKana" maxlength="60"></label>
+    <label>お電話番号<input id="npPhone" maxlength="20" inputmode="tel"></label>
+    <label>日時<input id="npDt" type="datetime-local" step="900" required></label>
+    <label>担当<input id="npCo" maxlength="40" placeholder="例：五味 新（院長カウンセリングは自動で院長）"></label>
+    <fieldset style="border:1px solid var(--line);border-radius:10px;padding:8px 10px"><legend style="font-size:12px">状態</legend>
+      <label style="display:inline-flex;gap:6px;align-items:center;margin-right:14px"><input type="radio" name="npSt" value="approved" checked style="width:auto"> 確定として登録</label>
+      <label style="display:inline-flex;gap:6px;align-items:center"><input type="radio" name="npSt" value="pending" style="width:auto"> 仮（新着）として登録</label>
+    </fieldset>
+    <label>メモ（スタッフのみ）<textarea id="npNote" maxlength="500" rows="3"></textarea></label>
+    <button class="primary" type="submit">登録する</button>
+    <p id="npErr" style="color:#9A4A4A;font-size:13px;margin:0"></p>
+    <p style="font-size:12px;color:var(--sub);margin:0">※電話や窓口で受けた予約の登録用です。LINEを使っていない方には、ここで登録した内容はLINEで届きません。</p>
+  </form>
+</aside>
+<aside class="drawer" id="staffPanel" hidden aria-label="スタッフ管理">
+  <header><h1 style="font-size:16px">スタッフ管理</h1><span class="sp"></span><button type="button" id="stClose">閉じる</button></header>
+  <div style="padding:14px;overflow:auto;flex:1">
+    <p style="font-size:12px;color:var(--sub);margin:0 0 8px">院長・受付だけが操作できます。削除できるのはカウンセラーのみです。</p>
+    <div id="stList"></div>
+    <h2 style="font-size:15px;margin:20px 0 6px">カウンセラーを追加</h2>
+    <form id="stAdd" style="display:flex;flex-direction:column;gap:6px">
+      <label>表示名（患者さんに見える名前）<input id="stName" maxlength="40" placeholder="例：五味 新"></label>
+      <label>ログインID（半角英数字）<input id="stId" maxlength="32" autocapitalize="off" spellcheck="false" placeholder="例：gomi"></label>
+      <label>初期パスワード（8文字以上）<input id="stPw" type="password" autocomplete="new-password" minlength="8"></label>
+      <button class="primary" type="submit">追加する</button>
+      <p id="stErr" style="color:#9A4A4A;font-size:13px;margin:0"></p>
+    </form>
+  </div>
+</aside>
+<aside class="drawer" id="drawer" hidden aria-label="メッセージ">
+  <header><h1 id="drTitle" style="font-size:16px">メッセージ</h1><span class="sp"></span><button type="button" id="drClose">閉じる</button></header>
+  <div class="legend"><span><i style="background:#C9A227"></i>患者さん</span><span><i style="background:#4F6B4A"></i>カウンセラー</span><span><i style="background:#3E6C9C"></i>受付</span><span><i style="background:#8A5A6B"></i>院長</span></div>
+  <div class="thread" id="thread"></div>
+  <form class="compose" id="compose">
+    <textarea id="cBody" maxlength="1000" placeholder="患者さんへのメッセージ（カウンセラー・受付どちらにも共有されます）"></textarea>
+    <div style="display:flex;gap:8px;align-items:center"><span id="cAs" style="font-size:12px;color:var(--sub);flex:1"></span><button class="primary" type="submit">送信</button></div>
+  </form>
+</aside>
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  const sb = createClient('https://qhdyktpgrmxeccnynixn.supabase.co', 'sb_publishable_uI5fDJgHzQqOmPDhy4jr_Q_QYSTBltu');
+  const COUNSELORS = ['五味 新','新井 みゆき','市川 和代','田中 康子','山添 匠','松本 清子','阿部 友音','山崎 美晴'];
+  const TABS = [['pending','新着'],['adjusting','調整中'],['approved','確定'],['declined','お断り'],['all','すべて']];
+  const MENU_JP = { counseling:'カウンセリング', director:'院長カウンセリング（自費）', wisc:'WISC-V（自費）' };
+  const MENU_COLOR = { counseling:'#4F6B4A', director:'#8A5A6B', wisc:'#3E6C9C' };
+  const mtag = r => `<span style="font-size:11px;font-weight:700;color:#fff;background:${MENU_COLOR[r.menu||'counseling']};border-radius:4px;padding:1px 6px;margin-right:6px">${MENU_JP[r.menu||'counseling']}</span>${r.via==='line'?'<span style="font-size:10px;font-weight:700;color:#fff;background:#06C755;border-radius:4px;padding:1px 5px;margin-right:6px">LINE</span>':''}${r.via==='staff'?'<span style="font-size:10px;font-weight:700;color:#2E332B;background:#E6E9E1;border-radius:4px;padding:1px 5px;margin-right:6px">スタッフ入力</span>':''}`;
+  const LABEL = { pending:'新着', adjusting:'調整中', approved:'確定', declined:'お断り', cancelled:'キャンセル' };
+  // ログインIDは内部で「ID@staff.sumiokaclinic.com」に置き換えて認証します
+  const toEmail = id => { id = id.trim().toLowerCase(); return id.includes('@') ? id : id + '@staff.sumiokaclinic.com'; };
+  let rows = [], tab = 'pending', me = null, seen = new Set(), msgs = [], openId = null, weekStart = mondayOf(new Date());
+  const ROLE = { patient:'患者さん', counselor:'カウンセラー', reception:'受付', director:'院長' };
+  function mondayOf(d) { const x = new Date(d); x.setHours(0,0,0,0); const k = (x.getDay() + 6) % 7; x.setDate(x.getDate() - k); return x; }
+  const unread = id => msgs.filter(m => m.request_id === id && m.sender_type === 'patient' && !m.staff_read_at).length;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const fmt = iso => { if (!iso) return '—'; const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]}) ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+  const toast = t => { const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => el.style.display = 'none', 5000); };
+
+  function chime() { try { const a = new AudioContext(); [660, 880].forEach((f, i) => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = f; o.connect(g); g.connect(a.destination); g.gain.setValueAtTime(.15, a.currentTime + i*.2); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + i*.2 + .4); o.start(a.currentTime + i*.2); o.stop(a.currentTime + i*.2 + .4); }); } catch {} }
+  function notifyNew(r) {
+    chime(); toast(`新しい予約申請：${r.patient_name} 様（第1希望 ${fmt(r.wish1)}）`);
+    if ('Notification' in window && Notification.permission === 'granted') new Notification('新しいカウンセリング予約申請', { body: `${r.patient_name} 様　第1希望 ${fmt(r.wish1)}` });
+    document.title = '（新着）カウンセリング予約 管理';
+  }
+
+  function render() {
+    const counts = Object.fromEntries(TABS.map(([k]) => [k, k === 'all' ? rows.length : rows.filter(r => r.status === k).length]));
+    $('tabs').innerHTML = TABS.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${tab === k}">${l}<span class="badge">${counts[k]}</span></button>`).join('');
+    const list = rows.filter(r => tab === 'all' || r.status === tab);
+    $('list').innerHTML = list.length ? list.map(card).join('') : '<p class="empty">該当する予約はありません</p>';
+  }
+  function card(r) {
+    const wishes = [r.wish1, r.wish2, r.wish3].map((w, i) => w ? `<button type="button" data-act="approve" data-id="${r.id}" data-w="${w}">第${i+1}希望で確定　<strong>${fmt(w)}</strong></button>` : '').join('');
+    const open = r.status === 'pending' || r.status === 'adjusting';
+    return `<article class="card ${r.status === 'pending' && !seen.has(r.id) ? 'new' : ''}" data-card="${r.id}">
+      <div class="meta"><span>申請 ${fmt(r.created_at)}　予約番号 ${esc(r.access_code)}</span><span class="st st-${r.status}">${LABEL[r.status]}</span></div>
+      <div style="margin-bottom:2px">${mtag(r)}</div><div class="name">${unread(r.id) ? '<span style="color:#C0392B;font-size:12px">● 未読メッセージ　</span>' : ''}${esc(r.patient_name)} 様 <span style="font-size:12px;color:var(--sub)">${esc(r.patient_kana)}</span></div>
+      <dl>
+        <dt>区分</dt><dd>${r.visit_type === 'new' ? '初めてのカウンセリング（要・医師診察）' : '継続'}</dd>
+        <dt>電話</dt><dd><a href="tel:${esc(r.phone)}">${esc(r.phone)}</a></dd>
+        <dt>メール</dt><dd>${esc(r.email) || '—'}</dd>
+        <dt>希望担当</dt><dd>${esc(r.preferred_counselor) || '指定なし'}</dd>
+        <dt>ご要望</dt><dd>${esc(r.note) || '—'}</dd>
+        ${r.status === 'approved' ? `<dt>確定日時</dt><dd><strong>${fmt(r.confirmed_at)}</strong></dd><dt>担当</dt><dd>${esc(r.assigned_counselor) || '—'}</dd>` : ''}
+        ${r.decided_by ? `<dt>対応者</dt><dd>${esc(r.decided_by)}（${fmt(r.decided_at)}）</dd>` : ''}
+      </dl>
+      ${open ? `
+        <label style="font-size:12px;color:var(--sub)">担当カウンセラー</label>
+        <select data-field="assigned" data-id="${r.id}"><option value="">選択してください</option>${COUNSELORS.map(c => `<option ${(r.assigned_counselor || r.preferred_counselor || '').startsWith(c) ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        <div class="wishes">${wishes}</div>
+        <div class="controls">
+          <input type="datetime-local" data-field="custom" data-id="${r.id}" style="flex:1 1 180px">
+          <button type="button" class="primary" data-act="approve-custom" data-id="${r.id}">別日時で確定</button>
+        </div>` : ''}
+      <label style="font-size:12px;color:var(--sub);display:block;margin-top:8px">スタッフメモ（患者さんには見えません）</label>
+      <textarea data-field="memo" data-id="${r.id}">${esc(r.staff_note)}</textarea>
+      <div class="controls">
+        <button type="button" class="msgbtn" data-act="thread" data-id="${r.id}">メッセージ${unread(r.id) ? `<span class="unread">${unread(r.id)}</span>` : ''}</button>
+        <button type="button" data-act="memo" data-id="${r.id}">メモを保存</button>
+        ${open ? `<button type="button" class="warn" data-act="adjusting" data-id="${r.id}">調整中にする</button><button type="button" class="ng" data-act="declined" data-id="${r.id}">お断り</button>` : `<button type="button" data-act="pending" data-id="${r.id}">新着に戻す</button>`}
+      </div>
+    </article>`;
+  }
+
+  async function update(id, patch, msg) {
+    const { error } = await sb.from('counseling_requests').update(patch).eq('id', id);
+    if (error) { alert('保存できませんでした：' + error.message); return; }
+    toast(msg);
+  }
+  document.addEventListener('click', async (e) => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.tab) { tab = t.dataset.tab; render(); return; }
+    if (t.dataset.ev) { openThread(t.dataset.ev); return; }
+    const id = t.dataset.id, act = t.dataset.act; if (!act) return;
+    seen.add(id);
+    const who = me?.display_name || me?.email;
+    const assigned = document.querySelector(`[data-field="assigned"][data-id="${id}"]`)?.value || null;
+    if (act === 'approve' || act === 'approve-custom') {
+      const v = act === 'approve' ? t.dataset.w : document.querySelector(`[data-field="custom"][data-id="${id}"]`).value;
+      if (!v) { alert('日時を入力してください'); return; }
+      if (!assigned && !confirm('担当カウンセラーが未選択です。このまま確定しますか？')) return;
+      const at = new Date(v).toISOString();
+      if (!confirm(`${fmt(at)} で確定します。よろしいですか？\n（確定後、患者さんへ電話またはメールでご連絡ください）`)) return;
+      return update(id, { status: 'approved', confirmed_at: at, assigned_counselor: assigned, decided_by: who, decided_at: new Date().toISOString() }, '確定しました。患者さんへご連絡ください。');
+    }
+    if (act === 'thread') return openThread(id);
+    if (act === 'memo') return update(id, { staff_note: document.querySelector(`[data-field="memo"][data-id="${id}"]`).value }, 'メモを保存しました');
+    if (['adjusting','declined','pending'].includes(act)) {
+      if (act === 'declined' && !confirm('お断りにします。よろしいですか？')) return;
+      return update(id, { status: act, decided_by: act === 'pending' ? null : who, decided_at: act === 'pending' ? null : new Date().toISOString(), ...(act === 'pending' ? { confirmed_at: null } : {}) }, `「${LABEL[act]}」にしました`);
+    }
+  });
+
+  function renderThread() {
+    if (!openId) return;
+    const r = rows.find(x => x.id === openId); if (!r) return;
+    $('drTitle').textContent = `${r.patient_name} 様とのメッセージ`;
+    const list = msgs.filter(m => m.request_id === openId);
+    const th = $('thread');
+    th.replaceChildren(...(list.length ? list.map(m => {
+      const el = document.createElement('div'); el.className = 'bubble ' + m.sender_type;
+      const who = document.createElement('span'); who.className = 'who'; who.textContent = `${ROLE[m.sender_type]}　${m.sender_name}`;
+      const b = document.createElement('span'); b.textContent = m.body;
+      const tm = document.createElement('span'); tm.className = 'time';
+      tm.textContent = fmt(m.created_at) + (m.sender_type === 'patient' ? (m.staff_read_at ? `　既読（${m.staff_read_by}）` : '　未読') : (m.patient_read_at ? '　患者さん既読' : '　患者さん未読'));
+      el.append(who, b, tm); return el;
+    }) : [Object.assign(document.createElement('p'), { textContent: 'まだメッセージはありません。', style: 'color:#777;text-align:center' })]));
+    th.scrollTop = th.scrollHeight;
+  }
+  async function markRead(id) {
+    const ids = msgs.filter(m => m.request_id === id && m.sender_type === 'patient' && !m.staff_read_at).map(m => m.id);
+    if (!ids.length) return;
+    const now = new Date().toISOString(), by = me?.display_name || me?.email;
+    msgs = msgs.map(m => ids.includes(m.id) ? { ...m, staff_read_at: now, staff_read_by: by } : m);
+    await sb.from('counseling_messages').update({ staff_read: true, staff_read_at: now, staff_read_by: by }).in('id', ids);
+  }
+  async function openThread(id) {
+    openId = id; seen.add(id); $('drawer').hidden = false;
+    $('cAs').textContent = `${ROLE[me?.role] || 'スタッフ'}　${me?.display_name || me?.email} として送信`;
+    await markRead(id); renderThread(); render(); renderCal();
+  }
+  $('drClose').onclick = () => { openId = null; $('drawer').hidden = true; };
+  $('compose').onsubmit = async (e) => {
+    e.preventDefault(); const body = $('cBody').value.trim(); if (!body || !openId) return;
+    const role = ['counselor','reception','director'].includes(me?.role) ? me.role : 'reception';
+    const { error } = await sb.from('counseling_messages').insert({ request_id: openId, sender_type: role, sender_name: me?.display_name || me?.email, body });
+    if (error) { alert('送信できませんでした：' + error.message); return; }
+    $('cBody').value = '';
+  };
+
+  function renderCal() {
+    if ($('calView').hidden) return;
+    const days = [...Array(6)].map((_, i) => { const d = new Date(weekStart); d.setDate(d.getDate() + i); return d; });
+    const end = new Date(weekStart); end.setDate(end.getDate() + 6);
+    $('calLabel').textContent = `${days[0].getMonth()+1}/${days[0].getDate()} 〜 ${days[5].getMonth()+1}/${days[5].getDate()}`;
+    const H0 = 9, H1 = 20, PX = 56, today = new Date().toDateString();
+    let html = '<div class="calhead"></div>' + days.map(d => `<div class="calhead ${d.toDateString() === today ? 'today' : ''}">${d.getMonth()+1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）</div>`).join('');
+    html += '<div>' + [...Array(H1 - H0)].map((_, i) => `<div class="hour">${H0 + i}:00</div>`).join('') + '</div>';
+    days.forEach(d => {
+      const evs = [];
+      rows.forEach(r => {
+        const add = (iso, cls, label) => { if (!iso) return; const t = new Date(iso); if (t.toDateString() !== d.toDateString()) return; const top = (t.getHours() + t.getMinutes() / 60 - H0) * PX; if (top < 0 || top > (H1 - H0) * PX) return; evs.push(`<button type="button" class="ev ${cls}" data-ev="${r.id}" style="top:${top}px;height:${PX - 4}px">${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} ${esc(r.patient_name)}<br>${esc(MENU_JP[r.menu||'counseling'])}・${label}</button>`); };
+        if (r.status === 'approved') add(r.confirmed_at, 'approved', esc(r.assigned_counselor || '担当未定'));
+        if (r.status === 'pending' || r.status === 'adjusting') [r.wish1, r.wish2, r.wish3].forEach((w, i) => add(w, r.status === 'adjusting' ? 'adjusting' : 'wish', `第${i+1}希望${unread(r.id) ? '　●未読' : ''}`));
+      });
+      html += `<div class="calcol">${[...Array(H1 - H0)].map(() => '<div class="hour"></div>').join('')}${evs.join('')}</div>`;
+    });
+    $('calgrid').innerHTML = html;
+  }
+  const setView = v => { $('listView').hidden = v !== 'list'; $('calView').hidden = v !== 'cal'; $('vList').setAttribute('aria-pressed', v === 'list'); $('vCal').setAttribute('aria-pressed', v === 'cal'); renderCal(); };
+  $('vList').onclick = () => setView('list'); $('vCal').onclick = () => setView('cal');
+  $('calPrev').onclick = () => { weekStart.setDate(weekStart.getDate() - 7); renderCal(); };
+  $('calNext').onclick = () => { weekStart.setDate(weekStart.getDate() + 7); renderCal(); };
+  $('calToday').onclick = () => { weekStart = mondayOf(new Date()); renderCal(); };
+
+  async function load() {
+    const { data, error } = await sb.from('counseling_requests').select('*').order('created_at', { ascending: false }).limit(500);
+    if (error) { $('list').innerHTML = `<p class="empty">読み込めませんでした（スタッフ登録が必要です）</p>`; return; }
+    rows = data; data.forEach(r => { if (r.status !== 'pending') seen.add(r.id); });
+    const m = await sb.from('counseling_messages').select('*').order('created_at').limit(5000);
+    msgs = m.data || []; render(); renderCal();
+  }
+  function subscribe() {
+    sb.channel('cr').on('postgres_changes', { event: '*', schema: 'public', table: 'counseling_requests' }, (p) => {
+      if (p.eventType === 'INSERT') { rows.unshift(p.new); notifyNew(p.new); }
+      else if (p.eventType === 'UPDATE') { rows = rows.map(r => r.id === p.new.id ? p.new : r); }
+      render(); renderCal(); renderThread();
+    }).on('postgres_changes', { event: '*', schema: 'public', table: 'counseling_messages' }, async (p) => {
+      if (p.eventType === 'INSERT') {
+        msgs.push(p.new);
+        if (p.new.sender_type === 'patient') {
+          const r = rows.find(x => x.id === p.new.request_id);
+          chime(); toast(`メッセージが届きました：${r?.patient_name || ''} 様`);
+          if ('Notification' in window && Notification.permission === 'granted') new Notification('患者さんからメッセージが届きました', { body: `${r?.patient_name || ''} 様：${p.new.body.slice(0, 60)}` });
+          document.title = '（新着）カウンセリング予約 管理';
+          if (openId === p.new.request_id && document.hasFocus()) await markRead(openId);
+        }
+      } else if (p.eventType === 'UPDATE') { msgs = msgs.map(m => m.id === p.new.id ? p.new : m); }
+      render(); renderCal(); renderThread();
+    }).subscribe();
+  }
+  const ROLE_JP = { director: '院長', reception: '受付', counselor: 'カウンセラー' };
+  async function staffApi(body) {
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch('https://qhdyktpgrmxeccnynixn.supabase.co/functions/v1/staff-admin', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_uI5fDJgHzQqOmPDhy4jr_Q_QYSTBltu', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify(body) });
+    return { ok: r.ok, ...(await r.json().catch(() => ({}))) };
+  }
+  async function loadStaff() {
+    const d = await staffApi({ action: 'list' });
+    const box = $('stList'); box.replaceChildren();
+    (d.staff || []).forEach(st => {
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)';
+      const t = document.createElement('div'); t.style.flex = '1'; t.textContent = `${ROLE_JP[st.role] || st.role}　${st.display_name}（ID：${st.login_id}）`;
+      row.append(t);
+      if (st.role === 'counselor') {
+        const del = document.createElement('button'); del.type = 'button'; del.textContent = '削除'; del.style.cssText = 'color:#9A4A4A;border-color:#E3C3C3';
+        del.onclick = async () => { if (!confirm(`${st.display_name} さんのアカウントを削除しますか？\nこの人はログインできなくなります（過去のメッセージは残ります）。`)) return; const r = await staffApi({ action: 'remove', email: st.email }); if (!r.ok) alert(r.error || '削除できませんでした'); else { toast('削除しました'); loadStaff(); } };
+        row.append(del);
+      }
+      box.append(row);
+    });
+  }
+  $('staffBtn').onclick = () => { $('staffPanel').hidden = false; loadStaff(); };
+  $('stClose').onclick = () => { $('staffPanel').hidden = true; };
+  $('stAdd').onsubmit = async (e) => {
+    e.preventDefault(); $('stErr').textContent = '';
+    const r = await staffApi({ action: 'add', display_name: $('stName').value, login_id: $('stId').value, password: $('stPw').value });
+    if (!r.ok) { $('stErr').textContent = r.error || '追加できませんでした'; return; }
+    $('stName').value = $('stId').value = $('stPw').value = ''; toast('カウンセラーを追加しました'); loadStaff();
+  };
+  $('newBtn').onclick = () => { $('newPanel').hidden = false; $('npErr').textContent = ''; };
+  $('npClose').onclick = () => { $('newPanel').hidden = true; };
+  $('np').onsubmit = async (e) => {
+    e.preventDefault(); $('npErr').textContent = '';
+    const menu = $('npMenu').value, dt = $('npDt').value, name = $('npName').value.trim();
+    if (!name || !dt) { $('npErr').textContent = 'お名前と日時を入力してください'; return; }
+    const st = document.querySelector('input[name="npSt"]:checked').value, iso = new Date(dt).toISOString();
+    const who = me?.display_name || me?.email;
+    const co = $('npCo').value.trim() || (menu === 'director' ? '院長 墨岡' : null);
+    const { data, error } = await sb.from('counseling_requests').insert({
+      menu, via: 'staff', visit_type: 'continuing', patient_name: name, patient_kana: $('npKana').value.trim() || null,
+      phone: $('npPhone').value.trim() || '-', wish1: iso, status: st, assigned_counselor: co,
+      confirmed_at: st === 'approved' ? iso : null, staff_note: $('npNote').value.trim() || null,
+      decided_by: st === 'approved' ? who : null, decided_at: st === 'approved' ? new Date().toISOString() : null,
+    }).select().single();
+    if (error) { $('npErr').textContent = '登録できませんでした：' + error.message; return; }
+    await sb.from('counseling_history').insert({ request_id: data.id, actor: `${ROLE_JP[me?.role] || ''} ${who}`.trim(), action: `スタッフが入力（${MENU_JP[menu]}・${st === 'approved' ? '確定' : '仮'}）` });
+    $('np').reset(); $('newPanel').hidden = true; toast(`登録しました（予約番号 ${data.access_code}）`);
+  };
+  async function start(session) {
+    $('loginView').hidden = true; $('appView').hidden = false;
+    const email = session.user.email;
+    const { data } = await sb.from('staff').select('*').eq('email', email).maybeSingle();
+    me = data || { email };
+    $('who').textContent = `${ROLE_JP[me.role] ? ROLE_JP[me.role] + '　' : ''}${me.display_name || email} さん`;
+    $('staffBtn').hidden = !['director','reception'].includes(me.role);
+    if (!window.matchMedia('(display-mode: standalone)').matches) $('installNote').hidden = false;
+    $('notifyBtn').hidden = !('Notification' in window) || Notification.permission === 'granted';
+    await load(); subscribe();
+  }
+  $('notifyBtn').onclick = async () => { const p = await Notification.requestPermission(); if (p === 'granted') { $('notifyBtn').hidden = true; toast('通知をオンにしました'); } };
+  $('logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+  window.addEventListener('focus', () => document.title = 'カウンセリング予約 管理');
+  $('loginForm').onsubmit = async (e) => {
+    e.preventDefault(); $('loginErr').textContent = '';
+    const { data, error } = await sb.auth.signInWithPassword({ email: toEmail($('em').value), password: $('pw').value });
+    if (error) { $('loginErr').textContent = 'ログインできませんでした。ログインIDとパスワードをご確認ください。'; return; }
+    start(data.session);
+  };
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) start(session); else $('loginView').hidden = false;
+</script>
+</body>
+</html>
