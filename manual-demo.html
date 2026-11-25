@@ -341,7 +341,7 @@ window.fetch = (orig => async (u, o) => (String(u).includes('functions/v1/staff-
         ${r.status === 'approved' ? `<dt>確定日時</dt><dd><strong>${fmt(r.confirmed_at)}</strong></dd>` : ''}
         ${r.decided_by ? `<dt>対応者</dt><dd>${esc(r.decided_by)}（${fmt(r.decided_at)}）</dd>` : ''}
       </dl>
-      <label style="font-size:12px;color:var(--sub)">担当カウンセラー（担当者には変更がメールで届きます）</label>
+      <label style="font-size:12px;color:var(--sub)">担当カウンセラー（担当者には変更がLINEまたはメールで届きます）</label>
       <div class="controls" style="margin-top:2px">
         <select data-field="assigned" data-id="${r.id}" style="flex:1 1 180px"><option value="">選択してください</option>${coOpts}</select>
         <button type="button" data-act="assign" data-id="${r.id}">担当を保存</button>
@@ -397,7 +397,7 @@ window.fetch = (orig => async (u, o) => (String(u).includes('functions/v1/staff-
     const who = me?.display_name || me?.email;
     const aSel = document.querySelector(`[data-field="assigned"][data-id="${id}"]`);
     const assignedEmail = aSel?.value || null, assigned = assignedEmail ? aSel.selectedOptions[0].textContent : null;
-    if (act === 'assign') return update(id, { assigned_email: assignedEmail, assigned_counselor: assigned }, assigned ? `担当を「${assigned}」にしました（本人にメールでお知らせします）` : '担当を外しました');
+    if (act === 'assign') return update(id, { assigned_email: assignedEmail, assigned_counselor: assigned }, assigned ? `担当を「${assigned}」にしました（本人にLINEまたはメールでお知らせします）` : '担当を外しました');
     if (act === 'sthread') return openThread(id, 'staff');
     if (act === 'approve' || act === 'approve-custom') {
       const v = act === 'approve' ? t.dataset.w : document.querySelector(`[data-field="custom"][data-id="${id}"]`).value;
