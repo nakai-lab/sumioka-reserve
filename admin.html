@@ -112,7 +112,7 @@
   <h2>スタッフログイン</h2>
   <p style="color:var(--sub);margin:0 0 8px">カウンセリング予約の管理画面です。</p>
   <form id="loginForm">
-    <label for="em">メールアドレス</label><input id="em" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required placeholder="例：name@example.com（受付・院長はIDでも可）">
+    <label for="em">メールアドレス</label><input id="em" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required placeholder="例：name@example.com（受付・Dr.卓子はIDでも可）">
     <label for="pw">パスワード</label><input id="pw" type="password" autocomplete="current-password" required>
     <button class="primary" style="width:100%;margin-top:16px" type="submit">ログイン</button>
     <p id="loginErr" style="color:var(--ng)"></p>
@@ -189,7 +189,7 @@
 <aside class="drawer" id="staffPanel" hidden aria-label="スタッフ管理">
   <header><h1 style="font-size:16px">スタッフ管理</h1><span class="sp"></span><button type="button" id="stClose">閉じる</button></header>
   <div style="padding:14px;overflow:auto;flex:1">
-    <p style="font-size:12px;color:var(--sub);margin:0 0 8px">院長・受付だけが操作できます。削除できるのはカウンセラーのみです。</p>
+    <p style="font-size:12px;color:var(--sub);margin:0 0 8px">Dr.卓子・受付だけが操作できます。削除できるのはカウンセラーのみです。</p>
     <div id="stList"></div>
     <h2 style="font-size:15px;margin:20px 0 6px">カウンセラーを追加</h2>
     <form id="stAdd" style="display:flex;flex-direction:column;gap:6px">
@@ -204,7 +204,7 @@
 <aside class="drawer" id="drawer" hidden aria-label="メッセージ">
   <header><h1 id="drTitle" style="font-size:16px">メッセージ</h1><span class="sp"></span><button type="button" id="drClose">閉じる</button></header>
   <div class="dtabs"><button type="button" id="dtPatient" aria-pressed="true">患者さんとのやり取り</button><button type="button" id="dtStaff" aria-pressed="false">スタッフ間メッセージ</button></div>
-  <div class="legend" id="lgPatient"><span><i style="background:#C9A227"></i>患者さん</span><span><i style="background:#4F6B4A"></i>カウンセラー</span><span><i style="background:#3E6C9C"></i>受付</span><span><i style="background:#8A5A6B"></i>院長</span></div>
+  <div class="legend" id="lgPatient"><span><i style="background:#C9A227"></i>患者さん</span><span><i style="background:#4F6B4A"></i>カウンセラー</span><span><i style="background:#3E6C9C"></i>受付</span><span><i style="background:#8A5A6B"></i>Dr.卓子</span></div>
   <div class="thread" id="thread"></div>
   <form class="compose" id="compose">
     <textarea id="cBody" maxlength="1000" placeholder="患者さんへのメッセージ（LINEで申請した方にはLINEに届きます）"></textarea>
@@ -239,7 +239,7 @@
   // ログインIDは内部で「ID@staff.sumiokaclinic.com」に置き換えて認証します
   const toEmail = id => { id = id.trim().toLowerCase(); return id.includes('@') ? id : id + '@staff.sumiokaclinic.com'; };
   let rows = [], tab = 'pending', me = null, seen = new Set(), msgs = [], openId = null, weekStart = mondayOf(new Date());
-  const ROLE = { patient:'患者さん', counselor:'カウンセラー', reception:'受付', director:'院長' };
+  const ROLE = { patient:'患者さん', counselor:'カウンセラー', reception:'受付', director:'Dr.卓子' };
   function mondayOf(d) { const x = new Date(d); x.setHours(0,0,0,0); const k = (x.getDay() + 6) % 7; x.setDate(x.getDate() - k); return x; }
   const unread = id => msgs.filter(m => m.request_id === id && m.sender_type === 'patient' && !m.staff_read_at).length;
   const myEmail = () => me?.email;
@@ -375,7 +375,7 @@
       const rs = readBy(m.id).filter(x => x.reader_email !== m.sender_email).map(x => x.reader_name);
       rd.textContent = rs.length ? `既読：${rs.join('、')}` : '未読';
       el.append(who, b, tm, rd); return el;
-    }) : [Object.assign(document.createElement('p'), { textContent: 'まだスタッフ間のメッセージはありません。受付・カウンセラー・院長だけが見られます。', style: 'color:#777;text-align:center' })]));
+    }) : [Object.assign(document.createElement('p'), { textContent: 'まだスタッフ間のメッセージはありません。受付・カウンセラー・Dr.卓子だけが見られます。', style: 'color:#777;text-align:center' })]));
     th.scrollTop = th.scrollHeight;
   }
   async function markStaffRead(id) {
@@ -388,7 +388,7 @@
   function setDTab(t) {
     dTab = t; $('dtPatient').setAttribute('aria-pressed', t === 'patient'); $('dtStaff').setAttribute('aria-pressed', t === 'staff');
     $('lgPatient').hidden = t !== 'patient';
-    $('cBody').placeholder = t === 'staff' ? 'スタッフ間のメッセージ（受付・カウンセラー・院長だけが見られます。担当者にはメールでお知らせします）' : '患者さんへのメッセージ（LINEで申請した方にはLINEに届きます）';
+    $('cBody').placeholder = t === 'staff' ? 'スタッフ間のメッセージ（受付・カウンセラー・Dr.卓子だけが見られます。担当者にはLINEまたはメールでお知らせします）' : '患者さんへのメッセージ（LINEで申請した方にはLINEに届きます）';
   }
   $('dtPatient').onclick = async () => { setDTab('patient'); if (openId) await markRead(openId); renderThread(); render(); };
   $('dtStaff').onclick = async () => { setDTab('staff'); if (openId) await markStaffRead(openId); renderThread(); render(); };
@@ -538,7 +538,7 @@
       render(); renderThread();
     }).subscribe();
   }
-  const ROLE_JP = { director: '院長', reception: '受付', counselor: 'カウンセラー' };
+  const ROLE_JP = { director: 'Dr.卓子', reception: '受付', counselor: 'カウンセラー' };
   async function staffApi(body) {
     const { data: { session } } = await sb.auth.getSession();
     const r = await fetch('https://qhdyktpgrmxeccnynixn.supabase.co/functions/v1/staff-admin', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: 'sb_publishable_uI5fDJgHzQqOmPDhy4jr_Q_QYSTBltu', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify(body) });
@@ -590,7 +590,7 @@
     const who = me?.display_name || me?.email;
     const coSel = $('npCo'), dir = staffList.find(x => x.role === 'director');
     const coEmail = coSel.value || (menu === 'director' ? dir?.email || null : null);
-    const co = coSel.value ? coSel.selectedOptions[0].textContent : (menu === 'director' ? (dir?.display_name || '院長') : null);
+    const co = coSel.value ? coSel.selectedOptions[0].textContent : (menu === 'director' ? (dir?.display_name || 'Dr.卓子') : null);
     const { data, error } = await sb.from('counseling_requests').insert({
       menu, via: 'staff', visit_type: 'continuing', patient_name: name, patient_kana: $('npKana').value.trim() || null,
       phone: $('npPhone').value.trim() || '-', wish1: iso, status: st, assigned_counselor: co, assigned_email: coEmail,
