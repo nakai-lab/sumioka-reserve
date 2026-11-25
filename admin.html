@@ -27,6 +27,11 @@
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:12px; }
   .card { background:#fff; border-radius:16px; padding:16px; border:1px solid var(--line); }
   .card.new { border:2px solid #E2A33B; }
+  .mtabs { display:flex; gap:0; margin:0 0 14px; border-bottom:2px solid var(--line); flex-wrap:wrap; }
+  .mtabs button { border:0; border-radius:0; background:none; margin:0 0 -2px; padding:10px 18px; min-height:48px; font-size:15px; font-weight:700; color:var(--sub); border-bottom:3px solid transparent; }
+  .mtabs button[aria-pressed="true"] { color:var(--ink); border-bottom-color:var(--mc,#2E332B); }
+  .mtabs .n { display:inline-block; min-width:22px; margin-left:6px; padding:0 7px; border-radius:999px; background:#C0392B; color:#fff; font-size:12px; line-height:20px; text-align:center; }
+  .mtabs .n.zero { background:#E6E9E1; color:var(--sub); }
   .csum { cursor:pointer; }
   .csum .line2 { display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:13px; color:var(--sub); margin-top:4px; }
   .csum .chev { margin-left:auto; font-size:12px; color:var(--sub); }
@@ -127,6 +132,7 @@
   </header>
   <div class="wrap">
     <div id="installNote" class="notice" hidden>この画面はデスクトップに置けます：Chromeのアドレスバー右端の「インストール」ボタン（またはメニュー →「キャスト、保存、共有」→「ページをアプリとしてインストール」）。</div>
+    <div class="mtabs" id="mtabs" hidden></div>
     <div class="viewtabs"><button type="button" id="vList" aria-pressed="true">一覧</button><button type="button" id="vCal" aria-pressed="false">カレンダー</button></div>
     <div id="listView"><div class="tabs" id="tabs"></div><div class="grid" id="list"></div></div>
     <div id="calView" hidden>
@@ -209,7 +215,18 @@
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   const sb = createClient('https://qhdyktpgrmxeccnynixn.supabase.co', 'sb_publishable_uI5fDJgHzQqOmPDhy4jr_Q_QYSTBltu');
+  let menuTab = 'counseling';
   let staffList = [], smsgs = [], sreads = [], dTab = 'patient', expanded = new Set();
+  const MENU_TABS = [['counseling','カウンセリング'],['director','院長カウンセリング'],['wisc','小児の知能検査']];
+  const menuOf = r => r.menu || 'counseling';
+  const vrows = () => rows.filter(r => menuOf(r) === menuTab);
+  // タブの数字：新着（未確認）・患者さんからの未読・スタッフ間の未読がある予約の件数
+  const attention = m => rows.filter(r => menuOf(r) === m && ((r.status === 'pending' && !seen.has(r.id)) || unread(r.id) || sUnread(r.id))).length;
+  function renderMenuTabs() {
+    const canAll = ['director','reception'].includes(me?.role);
+    $('mtabs').hidden = !canAll; if (!canAll) { menuTab = 'counseling'; return; }
+    $('mtabs').innerHTML = MENU_TABS.map(([k, l]) => { const n = attention(k); return `<button type="button" data-mtab="${k}" aria-pressed="${menuTab === k}" style="--mc:${MENU_COLOR[k]}">${l}<span class="n ${n ? '' : 'zero'}">${n}</span></button>`; }).join('');
+  }
   const counselors = () => staffList.filter(s => s.role === 'counselor' || s.role === 'director');
   const TABS = [['pending','新着'],['adjusting','調整中'],['approved','確定'],['declined','お断り'],['all','すべて']];
   const MENU_JP = { counseling:'カウンセリング', director:'院長カウンセリング（自費）', wisc:'WISC-V（自費）' };
@@ -238,9 +255,11 @@
   }
 
   function render() {
-    const counts = Object.fromEntries(TABS.map(([k]) => [k, k === 'all' ? rows.length : rows.filter(r => r.status === k).length]));
+    renderMenuTabs();
+    const vr = vrows();
+    const counts = Object.fromEntries(TABS.map(([k]) => [k, k === 'all' ? vr.length : vr.filter(r => r.status === k).length]));
     $('tabs').innerHTML = TABS.map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${tab === k}">${l}<span class="badge">${counts[k]}</span></button>`).join('');
-    const list = rows.filter(r => tab === 'all' || r.status === tab);
+    const list = vr.filter(r => tab === 'all' || r.status === tab);
     $('list').innerHTML = list.length ? list.map(card).join('') : '<p class="empty">該当する予約はありません</p>';
   }
   function card(r) {
@@ -315,6 +334,7 @@
   document.addEventListener('click', async (e) => {
     const t = e.target.closest('button'); if (!t) return;
     if (t.dataset.tab) { tab = t.dataset.tab; render(); return; }
+    if (t.dataset.mtab) { menuTab = t.dataset.mtab; render(); renderCal(); return; }
     if (t.dataset.ev) { openThread(t.dataset.ev); return; }
     const id = t.dataset.id, act = t.dataset.act; if (!act) return;
     seen.add(id);
@@ -425,7 +445,7 @@
     const y = monthStart.getFullYear(), m = monthStart.getMonth();
     $('calLabel').textContent = `${y}年${m+1}月`;
     const first = mondayOf(monthStart), today = new Date().toDateString();
-    const items = rows.flatMap(r => calItems(r).map(it => ({ ...it, r }))).sort((a, b) => a.at - b.at);
+    const items = vrows().flatMap(r => calItems(r).map(it => ({ ...it, r }))).sort((a, b) => a.at - b.at);
     let html = ['月','火','水','木','金','土','日'].map((w, i) => `<div class="mhead ${i===6?'sun':i===5?'sat':''}">${w}</div>`).join('');
     for (let i = 0; i < 42; i++) {
       const d = new Date(first); d.setDate(first.getDate() + i);
@@ -455,7 +475,7 @@
     html += '<div>' + [...Array(H1 - H0)].map((_, i) => `<div class="hour">${H0 + i}:00</div>`).join('') + '</div>';
     days.forEach(d => {
       const evs = [];
-      rows.forEach(r => {
+      vrows().forEach(r => {
         const add = (iso, cls, label) => { if (!iso) return; const t = new Date(iso); if (t.toDateString() !== d.toDateString()) return; const top = (t.getHours() + t.getMinutes() / 60 - H0) * PX; if (top < 0 || top > (H1 - H0) * PX) return; evs.push(`<button type="button" class="ev ${cls}" data-ev="${r.id}" style="top:${top}px;height:${PX - 4}px">${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} ${esc(r.patient_name)}<br>${esc(MENU_JP[r.menu||'counseling'])}・${label}</button>`); };
         if (r.status === 'approved') add(r.confirmed_at, 'approved', esc(r.assigned_counselor || '担当未定'));
         if (r.status === 'pending' || r.status === 'adjusting') [r.wish1, r.wish2, r.wish3].forEach((w, i) => add(w, r.status === 'adjusting' ? 'adjusting' : 'wish', `第${i+1}希望${unread(r.id) ? '　●未読' : ''}`));
@@ -555,7 +575,7 @@
     if (!r.ok) { $('stErr').textContent = r.error || '追加できませんでした'; return; }
     $('stName').value = $('stId').value = $('stPw').value = ''; toast('カウンセラーを追加しました'); loadStaff();
   };
-  $('newBtn').onclick = () => { $('npCo').innerHTML = '<option value="">未定（院長カウンセリングは自動で院長）</option>' + counselors().map(c => `<option value="${esc(c.email)}">${esc(c.display_name)}</option>`).join(''); $('newPanel').hidden = false; $('npErr').textContent = ''; };
+  $('newBtn').onclick = () => { if ($('npMenu')) $('npMenu').value = menuTab; $('npCo').innerHTML = '<option value="">未定（院長カウンセリングは自動で院長）</option>' + counselors().map(c => `<option value="${esc(c.email)}">${esc(c.display_name)}</option>`).join(''); $('newPanel').hidden = false; $('npErr').textContent = ''; };
   $('npClose').onclick = () => { $('newPanel').hidden = true; };
   $('np').onsubmit = async (e) => {
     e.preventDefault(); $('npErr').textContent = '';
@@ -585,6 +605,7 @@
     me = data || { email };
     $('who').textContent = `${ROLE_JP[me.role] ? ROLE_JP[me.role] + '　' : ''}${me.display_name || email} さん`;
     $('staffBtn').hidden = !['director','reception'].includes(me.role);
+    $('newBtn').hidden = !['director','reception'].includes(me.role);
     if (!window.matchMedia('(display-mode: standalone)').matches) $('installNote').hidden = false;
     $('notifyBtn').hidden = !('Notification' in window) || Notification.permission === 'granted';
     await load(); subscribe();
