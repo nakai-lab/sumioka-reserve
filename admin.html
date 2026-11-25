@@ -27,6 +27,18 @@
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px,1fr)); gap:12px; }
   .card { background:#fff; border-radius:16px; padding:16px; border:1px solid var(--line); }
   .card.new { border:2px solid #E2A33B; }
+  .csum { cursor:pointer; }
+  .csum .line2 { display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:13px; color:var(--sub); margin-top:4px; }
+  .csum .chev { margin-left:auto; font-size:12px; color:var(--sub); }
+  .cbody { margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
+  .cbody[hidden] { display:none; }
+  .pill-red { background:#C0392B; color:#fff; border-radius:999px; font-size:11px; font-weight:700; padding:1px 8px; }
+  .pill-blue { background:#3E6C9C; color:#fff; border-radius:999px; font-size:11px; font-weight:700; padding:1px 8px; }
+  .dtabs { display:flex; border-bottom:1px solid var(--line); }
+  .dtabs button { flex:1; border:0; border-radius:0; margin:0; background:#fff; font-weight:700; min-height:44px; border-bottom:3px solid transparent; }
+  .dtabs button[aria-pressed="true"] { border-bottom-color:#2E332B; }
+  .bubble.staffmsg { align-self:flex-start; border:2px solid #9AA38F; } .bubble.staffmsg.mine { align-self:flex-end; }
+  .bubble .reads { display:block; font-size:10px; color:#2F7D4A; text-align:right; }
   .meta { display:flex; justify-content:space-between; color:var(--sub); font-size:12px; }
   .name { font-size:18px; font-weight:700; margin:4px 0; }
   .st { font-size:12px; font-weight:700; padding:2px 10px; border-radius:999px; }
@@ -94,7 +106,7 @@
   <h2>スタッフログイン</h2>
   <p style="color:var(--sub);margin:0 0 8px">カウンセリング予約の管理画面です。</p>
   <form id="loginForm">
-    <label for="em">ログインID</label><input id="em" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required placeholder="例：sumioka-uketuke">
+    <label for="em">メールアドレス</label><input id="em" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required placeholder="例：name@example.com（受付・院長はIDでも可）">
     <label for="pw">パスワード</label><input id="pw" type="password" autocomplete="current-password" required>
     <button class="primary" style="width:100%;margin-top:16px" type="submit">ログイン</button>
     <p id="loginErr" style="color:var(--ng)"></p>
@@ -136,7 +148,7 @@
     <label>フリガナ<input id="npKana" maxlength="60"></label>
     <label>お電話番号<input id="npPhone" maxlength="20" inputmode="tel"></label>
     <label>日時<input id="npDt" type="datetime-local" step="900" required></label>
-    <label>担当<input id="npCo" maxlength="40" placeholder="例：五味 新（院長カウンセリングは自動で院長）"></label>
+    <label>担当<select id="npCo"><option value="">未定（院長カウンセリングは自動で院長）</option></select></label>
     <fieldset style="border:1px solid var(--line);border-radius:10px;padding:8px 10px"><legend style="font-size:12px">状態</legend>
       <label style="display:inline-flex;gap:6px;align-items:center;margin-right:14px"><input type="radio" name="npSt" value="approved" checked style="width:auto"> 確定として登録</label>
       <label style="display:inline-flex;gap:6px;align-items:center"><input type="radio" name="npSt" value="pending" style="width:auto"> 仮（新着）として登録</label>
@@ -154,8 +166,8 @@
     <div id="stList"></div>
     <h2 style="font-size:15px;margin:20px 0 6px">カウンセラーを追加</h2>
     <form id="stAdd" style="display:flex;flex-direction:column;gap:6px">
-      <label>表示名（患者さんに見える名前）<input id="stName" maxlength="40" placeholder="例：五味 新"></label>
-      <label>ログインID（半角英数字）<input id="stId" maxlength="32" autocapitalize="off" spellcheck="false" placeholder="例：gomi"></label>
+      <label>名前（患者さん・スタッフに見える名前）<input id="stName" maxlength="40" placeholder="例：五味 新"></label>
+      <label>メールアドレス（ログインと、担当患者の変更のお知らせに使います）<input id="stId" type="email" maxlength="120" autocapitalize="off" spellcheck="false" placeholder="例：gomi@example.com"></label>
       <label>初期パスワード（8文字以上）<input id="stPw" type="password" autocomplete="new-password" minlength="8"></label>
       <button class="primary" type="submit">追加する</button>
       <p id="stErr" style="color:#9A4A4A;font-size:13px;margin:0"></p>
@@ -164,10 +176,11 @@
 </aside>
 <aside class="drawer" id="drawer" hidden aria-label="メッセージ">
   <header><h1 id="drTitle" style="font-size:16px">メッセージ</h1><span class="sp"></span><button type="button" id="drClose">閉じる</button></header>
-  <div class="legend"><span><i style="background:#C9A227"></i>患者さん</span><span><i style="background:#4F6B4A"></i>カウンセラー</span><span><i style="background:#3E6C9C"></i>受付</span><span><i style="background:#8A5A6B"></i>院長</span></div>
+  <div class="dtabs"><button type="button" id="dtPatient" aria-pressed="true">患者さんとのやり取り</button><button type="button" id="dtStaff" aria-pressed="false">スタッフ間メッセージ</button></div>
+  <div class="legend" id="lgPatient"><span><i style="background:#C9A227"></i>患者さん</span><span><i style="background:#4F6B4A"></i>カウンセラー</span><span><i style="background:#3E6C9C"></i>受付</span><span><i style="background:#8A5A6B"></i>院長</span></div>
   <div class="thread" id="thread"></div>
   <form class="compose" id="compose">
-    <textarea id="cBody" maxlength="1000" placeholder="患者さんへのメッセージ（カウンセラー・受付どちらにも共有されます）"></textarea>
+    <textarea id="cBody" maxlength="1000" placeholder="患者さんへのメッセージ（LINEで申請した方にはLINEに届きます）"></textarea>
     <div style="display:flex;gap:8px;align-items:center"><span id="cAs" style="font-size:12px;color:var(--sub);flex:1"></span><button class="primary" type="submit">送信</button></div>
   </form>
 </aside>
@@ -175,7 +188,8 @@
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   const sb = createClient('https://qhdyktpgrmxeccnynixn.supabase.co', 'sb_publishable_uI5fDJgHzQqOmPDhy4jr_Q_QYSTBltu');
-  const COUNSELORS = ['五味 新','新井 みゆき','市川 和代','田中 康子','山添 匠','松本 清子','阿部 友音','山崎 美晴'];
+  let staffList = [], smsgs = [], sreads = [], dTab = 'patient', expanded = new Set();
+  const counselors = () => staffList.filter(s => s.role === 'counselor' || s.role === 'director');
   const TABS = [['pending','新着'],['adjusting','調整中'],['approved','確定'],['declined','お断り'],['all','すべて']];
   const MENU_JP = { counseling:'カウンセリング', director:'院長カウンセリング（自費）', wisc:'WISC-V（自費）' };
   const MENU_COLOR = { counseling:'#4F6B4A', director:'#8A5A6B', wisc:'#3E6C9C' };
@@ -187,6 +201,9 @@
   const ROLE = { patient:'患者さん', counselor:'カウンセラー', reception:'受付', director:'院長' };
   function mondayOf(d) { const x = new Date(d); x.setHours(0,0,0,0); const k = (x.getDay() + 6) % 7; x.setDate(x.getDate() - k); return x; }
   const unread = id => msgs.filter(m => m.request_id === id && m.sender_type === 'patient' && !m.staff_read_at).length;
+  const myEmail = () => me?.email;
+  const readBy = mid => sreads.filter(x => x.message_id === mid);
+  const sUnread = id => smsgs.filter(m => m.request_id === id && m.sender_email !== myEmail() && !readBy(m.id).some(x => x.reader_email === myEmail())).length;
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const fmt = iso => { if (!iso) return '—'; const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()}(${'日月火水木金土'[d.getDay()]}) ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
@@ -208,32 +225,42 @@
   function card(r) {
     const wishes = [r.wish1, r.wish2, r.wish3].map((w, i) => w ? `<button type="button" data-act="approve" data-id="${r.id}" data-w="${w}">第${i+1}希望で確定　<strong>${fmt(w)}</strong></button>` : '').join('');
     const open = r.status === 'pending' || r.status === 'adjusting';
+    const u = unread(r.id), su = sUnread(r.id), isOpen = expanded.has(r.id);
+    const when = r.status === 'approved' ? `確定 ${fmt(r.confirmed_at)}` : `第1希望 ${fmt(r.wish1)}`;
+    const coOpts = counselors().map(c => `<option value="${esc(c.email)}" ${r.assigned_email === c.email || (!r.assigned_email && (r.assigned_counselor || r.preferred_counselor || '').startsWith(c.display_name)) ? 'selected' : ''}>${esc(c.display_name)}</option>`).join('');
     return `<article class="card ${r.status === 'pending' && !seen.has(r.id) ? 'new' : ''}" data-card="${r.id}">
-      <div class="meta"><span>申請 ${fmt(r.created_at)}　予約番号 ${esc(r.access_code)}</span><span class="st st-${r.status}">${LABEL[r.status]}</span></div>
-      <div style="margin-bottom:2px">${mtag(r)}</div><div class="name">${unread(r.id) ? '<span style="color:#C0392B;font-size:12px">● 未読メッセージ　</span>' : ''}${esc(r.patient_name)} 様 <span style="font-size:12px;color:var(--sub)">${esc(r.patient_kana)}</span></div>
+      <div class="csum" data-toggle="${r.id}" role="button" tabindex="0" aria-expanded="${isOpen}">
+        <div class="meta"><span>申請 ${fmt(r.created_at)}　予約番号 ${esc(r.access_code)}</span><span class="st st-${r.status}">${LABEL[r.status]}</span></div>
+        <div style="margin-bottom:2px">${mtag(r)}</div>
+        <div class="name">${esc(r.patient_name)} 様 <span style="font-size:12px;color:var(--sub)">${esc(r.patient_kana)}</span></div>
+        <div class="line2"><span>${when}</span><span>担当：${esc(r.assigned_counselor) || '未定'}</span>${u ? `<span class="pill-red">患者さんから ${u}</span>` : ''}${su ? `<span class="pill-blue">スタッフ ${su}</span>` : ''}<span class="chev">${isOpen ? '▲ 閉じる' : '▼ 詳しく'}</span></div>
+      </div>
+      <div class="cbody" ${isOpen ? '' : 'hidden'}>
       <dl>
         <dt>区分</dt><dd>${r.visit_type === 'new' ? '初めてのカウンセリング（要・医師診察）' : '継続'}</dd>
         <dt>電話</dt><dd><a href="tel:${esc(r.phone)}">${esc(r.phone)}</a></dd>
         <dt>メール</dt><dd>${esc(r.email) || '—'}</dd>
         <dt>希望担当</dt><dd>${esc(r.preferred_counselor) || '指定なし'}</dd>
         <dt>ご要望</dt><dd>${esc(r.note) || '—'}</dd>
-        ${r.status === 'approved' ? `<dt>確定日時</dt><dd><strong>${fmt(r.confirmed_at)}</strong></dd><dt>担当</dt><dd>${esc(r.assigned_counselor) || '—'}</dd>` : ''}
+        ${r.status === 'approved' ? `<dt>確定日時</dt><dd><strong>${fmt(r.confirmed_at)}</strong></dd>` : ''}
         ${r.decided_by ? `<dt>対応者</dt><dd>${esc(r.decided_by)}（${fmt(r.decided_at)}）</dd>` : ''}
       </dl>
+      <label style="font-size:12px;color:var(--sub)">担当カウンセラー（担当者には変更がメールで届きます）</label>
+      <div class="controls" style="margin-top:2px">
+        <select data-field="assigned" data-id="${r.id}" style="flex:1 1 180px"><option value="">選択してください</option>${coOpts}</select>
+        <button type="button" data-act="assign" data-id="${r.id}">担当を保存</button>
+      </div>
       ${open ? `
-        <label style="font-size:12px;color:var(--sub)">担当カウンセラー</label>
-        <select data-field="assigned" data-id="${r.id}"><option value="">選択してください</option>${COUNSELORS.map(c => `<option ${(r.assigned_counselor || r.preferred_counselor || '').startsWith(c) ? 'selected' : ''}>${c}</option>`).join('')}</select>
         <div class="wishes">${wishes}</div>
         <div class="controls">
           <input type="datetime-local" data-field="custom" data-id="${r.id}" style="flex:1 1 180px">
           <button type="button" class="primary" data-act="approve-custom" data-id="${r.id}">別日時で確定</button>
         </div>` : ''}
-      <label style="font-size:12px;color:var(--sub);display:block;margin-top:8px">スタッフメモ（患者さんには見えません）</label>
-      <textarea data-field="memo" data-id="${r.id}">${esc(r.staff_note)}</textarea>
       <div class="controls">
-        <button type="button" class="msgbtn" data-act="thread" data-id="${r.id}">メッセージ${unread(r.id) ? `<span class="unread">${unread(r.id)}</span>` : ''}</button>
-        <button type="button" data-act="memo" data-id="${r.id}">メモを保存</button>
+        <button type="button" class="msgbtn" data-act="thread" data-id="${r.id}">患者さんとのやり取り${u ? `<span class="unread">${u}</span>` : ''}</button>
+        <button type="button" class="msgbtn" data-act="sthread" data-id="${r.id}">スタッフ間メッセージ${su ? `<span class="unread" style="background:#3E6C9C">${su}</span>` : ''}</button>
         ${open ? `<button type="button" class="warn" data-act="adjusting" data-id="${r.id}">調整中にする</button><button type="button" class="ng" data-act="declined" data-id="${r.id}">お断り</button>` : `<button type="button" data-act="pending" data-id="${r.id}">新着に戻す</button>`}
+      </div>
       </div>
     </article>`;
   }
@@ -260,6 +287,10 @@
     }
     toast(msg);
   }
+  document.addEventListener('click', (e) => {
+    const sum = e.target.closest('[data-toggle]'); if (!sum || e.target.closest('button,a,select,input')) return;
+    const id = sum.dataset.toggle; expanded.has(id) ? expanded.delete(id) : expanded.add(id); seen.add(id); render();
+  });
   document.addEventListener('click', async (e) => {
     const t = e.target.closest('button'); if (!t) return;
     if (t.dataset.tab) { tab = t.dataset.tab; render(); return; }
@@ -267,7 +298,10 @@
     const id = t.dataset.id, act = t.dataset.act; if (!act) return;
     seen.add(id);
     const who = me?.display_name || me?.email;
-    const assigned = document.querySelector(`[data-field="assigned"][data-id="${id}"]`)?.value || null;
+    const aSel = document.querySelector(`[data-field="assigned"][data-id="${id}"]`);
+    const assignedEmail = aSel?.value || null, assigned = assignedEmail ? aSel.selectedOptions[0].textContent : null;
+    if (act === 'assign') return update(id, { assigned_email: assignedEmail, assigned_counselor: assigned }, assigned ? `担当を「${assigned}」にしました（本人にメールでお知らせします）` : '担当を外しました');
+    if (act === 'sthread') return openThread(id, 'staff');
     if (act === 'approve' || act === 'approve-custom') {
       const v = act === 'approve' ? t.dataset.w : document.querySelector(`[data-field="custom"][data-id="${id}"]`).value;
       if (!v) { alert('日時を入力してください'); return; }
@@ -275,19 +309,48 @@
       const at = new Date(v).toISOString();
       const rr = rows.find(x => x.id === id);
       if (!confirm(`${fmt(at)} で確定します。よろしいですか？\n${rr?.line_user_id ? '（患者さんのLINEに確定のお知らせが届きます）' : '（確定後、患者さんへ電話等でご連絡ください）'}`)) return;
-      return update(id, { status: 'approved', confirmed_at: at, assigned_counselor: assigned, decided_by: who, decided_at: new Date().toISOString() }, '確定しました。');
+      return update(id, { status: 'approved', confirmed_at: at, assigned_counselor: assigned, assigned_email: assignedEmail, decided_by: who, decided_at: new Date().toISOString() }, '確定しました。');
     }
     if (act === 'thread') return openThread(id);
-    if (act === 'memo') return update(id, { staff_note: document.querySelector(`[data-field="memo"][data-id="${id}"]`).value }, 'メモを保存しました');
     if (['adjusting','declined','pending'].includes(act)) {
       if (act === 'declined' && !confirm('お断りにします。よろしいですか？')) return;
       return update(id, { status: act, decided_by: act === 'pending' ? null : who, decided_at: act === 'pending' ? null : new Date().toISOString(), ...(act === 'pending' ? { confirmed_at: null } : {}) }, `「${LABEL[act]}」にしました`);
     }
   });
 
+  function renderStaffThread(r) {
+    $('drTitle').textContent = `${r.patient_name} 様　スタッフ間メッセージ（患者さんには見えません）`;
+    const list = smsgs.filter(m => m.request_id === r.id), th = $('thread');
+    th.replaceChildren(...(list.length ? list.map(m => {
+      const el = document.createElement('div'); el.className = 'bubble staffmsg' + (m.sender_email === myEmail() ? ' mine' : '');
+      const who = document.createElement('span'); who.className = 'who'; who.textContent = `${ROLE[m.sender_role] || ''}　${m.sender_name}`;
+      const b = document.createElement('span'); b.textContent = m.body;
+      const tm = document.createElement('span'); tm.className = 'time'; tm.textContent = fmt(m.created_at);
+      const rd = document.createElement('span'); rd.className = 'reads';
+      const rs = readBy(m.id).filter(x => x.reader_email !== m.sender_email).map(x => x.reader_name);
+      rd.textContent = rs.length ? `既読：${rs.join('、')}` : '未読';
+      el.append(who, b, tm, rd); return el;
+    }) : [Object.assign(document.createElement('p'), { textContent: 'まだスタッフ間のメッセージはありません。受付・カウンセラー・院長だけが見られます。', style: 'color:#777;text-align:center' })]));
+    th.scrollTop = th.scrollHeight;
+  }
+  async function markStaffRead(id) {
+    const todo = smsgs.filter(m => m.request_id === id && m.sender_email !== myEmail() && !readBy(m.id).some(x => x.reader_email === myEmail()));
+    if (!todo.length) return;
+    const recs = todo.map(m => ({ message_id: m.id, reader_email: myEmail(), reader_name: me?.display_name || myEmail(), read_at: new Date().toISOString() }));
+    sreads.push(...recs);
+    await sb.from('staff_message_reads').upsert(recs, { onConflict: 'message_id,reader_email', ignoreDuplicates: true });
+  }
+  function setDTab(t) {
+    dTab = t; $('dtPatient').setAttribute('aria-pressed', t === 'patient'); $('dtStaff').setAttribute('aria-pressed', t === 'staff');
+    $('lgPatient').hidden = t !== 'patient';
+    $('cBody').placeholder = t === 'staff' ? 'スタッフ間のメッセージ（受付・カウンセラー・院長だけが見られます。担当者にはメールでお知らせします）' : '患者さんへのメッセージ（LINEで申請した方にはLINEに届きます）';
+  }
+  $('dtPatient').onclick = async () => { setDTab('patient'); if (openId) await markRead(openId); renderThread(); render(); };
+  $('dtStaff').onclick = async () => { setDTab('staff'); if (openId) await markStaffRead(openId); renderThread(); render(); };
   function renderThread() {
     if (!openId) return;
     const r = rows.find(x => x.id === openId); if (!r) return;
+    if (dTab === 'staff') return renderStaffThread(r);
     $('drTitle').textContent = `${r.patient_name} 様とのメッセージ`;
     const list = msgs.filter(m => m.request_id === openId);
     const th = $('thread');
@@ -308,15 +371,21 @@
     msgs = msgs.map(m => ids.includes(m.id) ? { ...m, staff_read_at: now, staff_read_by: by } : m);
     await sb.from('counseling_messages').update({ staff_read: true, staff_read_at: now, staff_read_by: by }).in('id', ids);
   }
-  async function openThread(id) {
-    openId = id; seen.add(id); $('drawer').hidden = false;
+  async function openThread(id, which = 'patient') {
+    openId = id; seen.add(id); $('drawer').hidden = false; setDTab(which);
     $('cAs').textContent = `${ROLE[me?.role] || 'スタッフ'}　${me?.display_name || me?.email} として送信`;
-    await markRead(id); renderThread(); render(); renderCal();
+    if (which === 'staff') await markStaffRead(id); else await markRead(id);
+    renderThread(); render(); renderCal();
   }
   $('drClose').onclick = () => { openId = null; $('drawer').hidden = true; };
   $('compose').onsubmit = async (e) => {
     e.preventDefault(); const body = $('cBody').value.trim(); if (!body || !openId) return;
     const role = ['counselor','reception','director'].includes(me?.role) ? me.role : 'reception';
+    if (dTab === 'staff') {
+      const { error } = await sb.from('staff_messages').insert({ request_id: openId, sender_email: myEmail(), sender_name: me?.display_name || myEmail(), sender_role: role, body });
+      if (error) { alert('送信できませんでした：' + error.message); return; }
+      $('cBody').value = ''; return;
+    }
     const { data: m, error } = await sb.from('counseling_messages').insert({ request_id: openId, sender_type: role, sender_name: me?.display_name || me?.email, body }).select().single();
     if (error) { alert('送信できませんでした：' + error.message); return; }
     $('cBody').value = '';
@@ -384,8 +453,14 @@
     const { data, error } = await sb.from('counseling_requests').select('*').order('created_at', { ascending: false }).limit(500);
     if (error) { $('list').innerHTML = `<p class="empty">読み込めませんでした（スタッフ登録が必要です）</p>`; return; }
     rows = data; data.forEach(r => { if (r.status !== 'pending') seen.add(r.id); });
-    const m = await sb.from('counseling_messages').select('*').order('created_at').limit(5000);
-    msgs = m.data || []; render(); renderCal();
+    const [m, sm, sr, st] = await Promise.all([
+      sb.from('counseling_messages').select('*').order('created_at').limit(5000),
+      sb.from('staff_messages').select('*').order('created_at').limit(5000),
+      sb.from('staff_message_reads').select('*').limit(20000),
+      sb.from('staff').select('email, display_name, role').order('display_name'),
+    ]);
+    msgs = m.data || []; smsgs = sm.data || []; sreads = sr.data || []; staffList = st.data || [];
+    render(); renderCal();
   }
   function subscribe() {
     sb.channel('cr').on('postgres_changes', { event: '*', schema: 'public', table: 'counseling_requests' }, (p) => {
@@ -404,6 +479,18 @@
         }
       } else if (p.eventType === 'UPDATE') { msgs = msgs.map(m => m.id === p.new.id ? p.new : m); }
       render(); renderCal(); renderThread();
+    }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_messages' }, async (p) => {
+      smsgs.push(p.new);
+      if (p.new.sender_email !== myEmail()) {
+        const r = rows.find(x => x.id === p.new.request_id);
+        chime(); toast(`スタッフメッセージ：${p.new.sender_name}（${r?.patient_name || ''} 様の件）`);
+        if ('Notification' in window && Notification.permission === 'granted') new Notification('スタッフメッセージが届きました', { body: `${p.new.sender_name}：${p.new.body.slice(0, 60)}` });
+        if (openId === p.new.request_id && dTab === 'staff' && document.hasFocus()) await markStaffRead(openId);
+      }
+      render(); renderThread();
+    }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_message_reads' }, (p) => {
+      if (!sreads.some(x => x.message_id === p.new.message_id && x.reader_email === p.new.reader_email)) sreads.push(p.new);
+      render(); renderThread();
     }).subscribe();
   }
   const ROLE_JP = { director: '院長', reception: '受付', counselor: 'カウンセラー' };
@@ -417,7 +504,7 @@
     const box = $('stList'); box.replaceChildren();
     (d.staff || []).forEach(st => {
       const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)';
-      const t = document.createElement('div'); t.style.flex = '1'; t.textContent = `${ROLE_JP[st.role] || st.role}　${st.display_name}（ID：${st.login_id}）`;
+      const t = document.createElement('div'); t.style.flex = '1'; t.textContent = `${ROLE_JP[st.role] || st.role}　${st.display_name}（${st.email}）`;
       row.append(t);
       if (st.role === 'counselor') {
         const del = document.createElement('button'); del.type = 'button'; del.textContent = '削除'; del.style.cssText = 'color:#9A4A4A;border-color:#E3C3C3';
@@ -431,11 +518,11 @@
   $('stClose').onclick = () => { $('staffPanel').hidden = true; };
   $('stAdd').onsubmit = async (e) => {
     e.preventDefault(); $('stErr').textContent = '';
-    const r = await staffApi({ action: 'add', display_name: $('stName').value, login_id: $('stId').value, password: $('stPw').value });
+    const r = await staffApi({ action: 'add', display_name: $('stName').value, email: $('stId').value, password: $('stPw').value });
     if (!r.ok) { $('stErr').textContent = r.error || '追加できませんでした'; return; }
     $('stName').value = $('stId').value = $('stPw').value = ''; toast('カウンセラーを追加しました'); loadStaff();
   };
-  $('newBtn').onclick = () => { $('newPanel').hidden = false; $('npErr').textContent = ''; };
+  $('newBtn').onclick = () => { $('npCo').innerHTML = '<option value="">未定（院長カウンセリングは自動で院長）</option>' + counselors().map(c => `<option value="${esc(c.email)}">${esc(c.display_name)}</option>`).join(''); $('newPanel').hidden = false; $('npErr').textContent = ''; };
   $('npClose').onclick = () => { $('newPanel').hidden = true; };
   $('np').onsubmit = async (e) => {
     e.preventDefault(); $('npErr').textContent = '';
@@ -443,15 +530,19 @@
     if (!name || !dt) { $('npErr').textContent = 'お名前と日時を入力してください'; return; }
     const st = document.querySelector('input[name="npSt"]:checked').value, iso = new Date(dt).toISOString();
     const who = me?.display_name || me?.email;
-    const co = $('npCo').value.trim() || (menu === 'director' ? '院長 墨岡' : null);
+    const coSel = $('npCo'), dir = staffList.find(x => x.role === 'director');
+    const coEmail = coSel.value || (menu === 'director' ? dir?.email || null : null);
+    const co = coSel.value ? coSel.selectedOptions[0].textContent : (menu === 'director' ? (dir?.display_name || '院長') : null);
     const { data, error } = await sb.from('counseling_requests').insert({
       menu, via: 'staff', visit_type: 'continuing', patient_name: name, patient_kana: $('npKana').value.trim() || null,
-      phone: $('npPhone').value.trim() || '-', wish1: iso, status: st, assigned_counselor: co,
-      confirmed_at: st === 'approved' ? iso : null, staff_note: $('npNote').value.trim() || null,
+      phone: $('npPhone').value.trim() || '-', wish1: iso, status: st, assigned_counselor: co, assigned_email: coEmail,
+      confirmed_at: st === 'approved' ? iso : null, staff_note: null,
       decided_by: st === 'approved' ? who : null, decided_at: st === 'approved' ? new Date().toISOString() : null,
     }).select().single();
     if (error) { $('npErr').textContent = '登録できませんでした：' + error.message; return; }
     await sb.from('counseling_history').insert({ request_id: data.id, actor: `${ROLE_JP[me?.role] || ''} ${who}`.trim(), action: `スタッフが入力（${MENU_JP[menu]}・${st === 'approved' ? '確定' : '仮'}）` });
+    const note = $('npNote').value.trim();
+    if (note) await sb.from('staff_messages').insert({ request_id: data.id, sender_email: myEmail(), sender_name: who, sender_role: me?.role || 'reception', body: note });
     $('np').reset(); $('newPanel').hidden = true; toast(`登録しました（予約番号 ${data.access_code}）`);
   };
   async function start(session) {
@@ -471,7 +562,7 @@
   $('loginForm').onsubmit = async (e) => {
     e.preventDefault(); $('loginErr').textContent = '';
     const { data, error } = await sb.auth.signInWithPassword({ email: toEmail($('em').value), password: $('pw').value });
-    if (error) { $('loginErr').textContent = 'ログインできませんでした。ログインIDとパスワードをご確認ください。'; return; }
+    if (error) { $('loginErr').textContent = 'ログインできませんでした。メールアドレスとパスワードをご確認ください。'; return; }
     start(data.session);
   };
   const { data: { session } } = await sb.auth.getSession();
