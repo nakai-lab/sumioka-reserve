@@ -71,6 +71,21 @@
   .ev.approved { background:#4F6B4A; color:#fff; }
   .ev.wish { background:#FFF4DB; color:#7A5310; border:1.5px dashed #D49A2A; }
   .ev.adjusting { background:#F1E9D6; color:#6A5420; border:1.5px dashed #9A7A3A; }
+  .calmode { display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
+  .calmode button { border:0; border-radius:0; margin:0; min-height:36px; padding:0 16px; background:#fff; }
+  .calmode button[aria-pressed="true"] { background:#2E332B; color:#fff; }
+  .cal[hidden] { display:none; }
+  .mgrid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); min-width:760px; }
+  .mhead { background:#F2F4EE; font-weight:700; text-align:center; padding:6px; border-bottom:1px solid var(--line); font-size:13px; }
+  .mhead.sun { color:#9A4A4A; } .mhead.sat { color:#3E6C9C; }
+  .mday { min-height:118px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); padding:4px; display:flex; flex-direction:column; gap:3px; }
+  .mday.out { background:#FAFAF7; color:#AAA; }
+  .mday.closed { background:repeating-linear-gradient(135deg,#FAFAF7 0 8px,#F3F4EF 8px 16px); }
+  .mday .dn { font-size:12px; font-weight:700; display:flex; justify-content:space-between; }
+  .mday.today .dn span:first-child { background:#4F6B4A; color:#fff; border-radius:999px; padding:0 7px; }
+  .mev { border:0; border-radius:6px; padding:2px 5px; font-size:11px; text-align:left; cursor:pointer; min-height:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500; }
+  .mev.approved { background:#4F6B4A; color:#fff; } .mev.wish { background:#FFF4DB; color:#7A5310; border:1px dashed #D49A2A; } .mev.adjusting { background:#F1E9D6; color:#6A5420; border:1px dashed #9A7A3A; }
+  .mmore { font-size:11px; color:var(--sub); border:0; background:none; text-align:left; cursor:pointer; padding:0 4px; min-height:0; }
   .toast { position:fixed; right:20px; bottom:20px; background:var(--deep); color:#fff; padding:14px 18px; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.2); display:none; }
 </style>
 </head>
@@ -102,11 +117,13 @@
     <div id="listView"><div class="tabs" id="tabs"></div><div class="grid" id="list"></div></div>
     <div id="calView" hidden>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-        <button type="button" id="calPrev">← 前の週</button><button type="button" id="calToday">今週</button><button type="button" id="calNext">次の週 →</button>
+        <span class="calmode"><button type="button" id="cmWeek" aria-pressed="true">週</button><button type="button" id="cmMonth" aria-pressed="false">月</button></span>
+        <button type="button" id="calPrev">← 前へ</button><button type="button" id="calToday">今日</button><button type="button" id="calNext">次へ →</button>
         <strong id="calLabel" style="margin-left:8px"></strong>
         <span style="margin-left:auto;font-size:12px;color:var(--sub)"><span style="display:inline-block;width:12px;height:12px;background:#4F6B4A;border-radius:3px;vertical-align:middle"></span> 確定　<span style="display:inline-block;width:12px;height:12px;background:#FFF4DB;border:1.5px dashed #D49A2A;border-radius:3px;vertical-align:middle"></span> 申請中の希望日時</span>
       </div>
-      <div class="cal"><div class="calgrid" id="calgrid"></div></div>
+      <div class="cal" id="weekBox"><div class="calgrid" id="calgrid"></div></div>
+      <div class="cal" id="monthBox" hidden><div class="mgrid" id="mgrid"></div></div>
     </div>
   </div>
 </section>
@@ -307,8 +324,39 @@
     if (r?.line_user_id) { const res = await notifyLine({ action: 'message', request_id: openId, message_id: m.id }); toast(res === 'sent' ? '患者さんのLINEに送りました' : 'LINEに送れませんでした。お電話でご連絡ください'); }
   };
 
+  let calMode = 'week', monthStart = (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; })();
+  function calItems(r) {
+    const out = [];
+    if (r.status === 'approved' && r.confirmed_at) out.push({ at: new Date(r.confirmed_at), cls: 'approved', label: r.assigned_counselor || '担当未定' });
+    if (r.status === 'pending' || r.status === 'adjusting') [r.wish1, r.wish2, r.wish3].forEach((w, i) => w && out.push({ at: new Date(w), cls: r.status === 'adjusting' ? 'adjusting' : 'wish', label: `第${i+1}希望` }));
+    return out;
+  }
+  function renderMonth() {
+    const y = monthStart.getFullYear(), m = monthStart.getMonth();
+    $('calLabel').textContent = `${y}年${m+1}月`;
+    const first = mondayOf(monthStart), today = new Date().toDateString();
+    const items = rows.flatMap(r => calItems(r).map(it => ({ ...it, r }))).sort((a, b) => a.at - b.at);
+    let html = ['月','火','水','木','金','土','日'].map((w, i) => `<div class="mhead ${i===6?'sun':i===5?'sat':''}">${w}</div>`).join('');
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(first); d.setDate(first.getDate() + i);
+      if (i >= 35 && d.getMonth() !== m) break;
+      const list = items.filter(it => it.at.toDateString() === d.toDateString());
+      const conf = list.filter(it => it.cls === 'approved').length;
+      const closed = d.getDay() === 0 || d.getDay() === 2;
+      html += `<div class="mday ${d.getMonth() !== m ? 'out' : ''} ${d.toDateString() === today ? 'today' : ''} ${closed ? 'closed' : ''}">
+        <div class="dn"><span>${d.getDate()}</span>${conf ? `<span style="font-weight:500;color:var(--sub)">確定${conf}</span>` : ''}</div>
+        ${list.slice(0, 4).map(it => `<button type="button" class="mev ${it.cls}" data-ev="${it.r.id}" title="${esc(it.r.patient_name)}　${esc(MENU_JP[it.r.menu||'counseling'])}　${esc(it.label)}">${String(it.at.getHours()).padStart(2,'0')}:${String(it.at.getMinutes()).padStart(2,'0')} ${esc(it.r.patient_name)}${it.cls !== 'approved' ? '（' + esc(it.label) + '）' : ''}</button>`).join('')}
+        ${list.length > 4 ? `<button type="button" class="mmore" data-day="${d.toISOString()}">ほか${list.length - 4}件</button>` : ''}
+      </div>`;
+    }
+    $('mgrid').innerHTML = html;
+  }
+  $('mgrid').addEventListener('click', e => { const b = e.target.closest('[data-day]'); if (!b) return; weekStart = mondayOf(new Date(b.dataset.day)); setMode('week'); });
+  const setMode = mode => { calMode = mode; $('cmWeek').setAttribute('aria-pressed', mode === 'week'); $('cmMonth').setAttribute('aria-pressed', mode === 'month'); $('weekBox').hidden = mode !== 'week'; $('monthBox').hidden = mode !== 'month'; renderCal(); };
+  $('cmWeek').onclick = () => setMode('week'); $('cmMonth').onclick = () => setMode('month');
   function renderCal() {
     if ($('calView').hidden) return;
+    if (calMode === 'month') return renderMonth();
     const days = [...Array(6)].map((_, i) => { const d = new Date(weekStart); d.setDate(d.getDate() + i); return d; });
     const end = new Date(weekStart); end.setDate(end.getDate() + 6);
     $('calLabel').textContent = `${days[0].getMonth()+1}/${days[0].getDate()} 〜 ${days[5].getMonth()+1}/${days[5].getDate()}`;
@@ -328,9 +376,9 @@
   }
   const setView = v => { $('listView').hidden = v !== 'list'; $('calView').hidden = v !== 'cal'; $('vList').setAttribute('aria-pressed', v === 'list'); $('vCal').setAttribute('aria-pressed', v === 'cal'); renderCal(); };
   $('vList').onclick = () => setView('list'); $('vCal').onclick = () => setView('cal');
-  $('calPrev').onclick = () => { weekStart.setDate(weekStart.getDate() - 7); renderCal(); };
-  $('calNext').onclick = () => { weekStart.setDate(weekStart.getDate() + 7); renderCal(); };
-  $('calToday').onclick = () => { weekStart = mondayOf(new Date()); renderCal(); };
+  $('calPrev').onclick = () => { if (calMode === 'month') monthStart.setMonth(monthStart.getMonth() - 1); else weekStart.setDate(weekStart.getDate() - 7); renderCal(); };
+  $('calNext').onclick = () => { if (calMode === 'month') monthStart.setMonth(monthStart.getMonth() + 1); else weekStart.setDate(weekStart.getDate() + 7); renderCal(); };
+  $('calToday').onclick = () => { weekStart = mondayOf(new Date()); monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0); renderCal(); };
 
   async function load() {
     const { data, error } = await sb.from('counseling_requests').select('*').order('created_at', { ascending: false }).limit(500);
