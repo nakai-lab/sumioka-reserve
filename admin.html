@@ -151,12 +151,12 @@
 <aside class="drawer" id="newPanel" hidden aria-label="予約を入力">
   <header><h1 style="font-size:16px">予約を入力（電話・窓口など）</h1><span class="sp"></span><button type="button" id="npClose">閉じる</button></header>
   <form id="np" style="padding:14px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:6px">
-    <label>メニュー<select id="npMenu"><option value="counseling">カウンセリング</option><option value="director">院長特別外来（自費診療・水曜のみ・50分 8,800円）</option><option value="wisc">小児の知能検査 WISC-V（約120分・18,000円税別）</option></select></label>
+    <label>メニュー<select id="npMenu"><option value="counseling">カウンセリング</option><option value="director">Dr.卓子 特別外来（自費診療・水曜のみ・50分 8,800円）</option><option value="wisc">小児の知能検査 WISC-V（約120分・18,000円税別）</option></select></label>
     <label>お名前（WISC-Vはお子さまのお名前）<input id="npName" maxlength="60" required></label>
     <label>フリガナ<input id="npKana" maxlength="60"></label>
     <label>お電話番号<input id="npPhone" maxlength="20" inputmode="tel"></label>
     <label>日時<input id="npDt" type="datetime-local" step="900" required></label>
-    <label>担当<select id="npCo"><option value="">未定（院長特別外来は自動で院長）</option></select></label>
+    <label>担当<select id="npCo"><option value="">未定（Dr.卓子 特別外来は自動でDr.卓子）</option></select></label>
     <fieldset style="border:1px solid var(--line);border-radius:10px;padding:8px 10px"><legend style="font-size:12px">状態</legend>
       <label style="display:inline-flex;gap:6px;align-items:center;margin-right:14px"><input type="radio" name="npSt" value="approved" checked style="width:auto"> 確定として登録</label>
       <label style="display:inline-flex;gap:6px;align-items:center"><input type="radio" name="npSt" value="pending" style="width:auto"> 仮（新着）として登録</label>
@@ -217,7 +217,7 @@
   const sb = createClient('https://qhdyktpgrmxeccnynixn.supabase.co', 'sb_publishable_uI5fDJgHzQqOmPDhy4jr_Q_QYSTBltu');
   let menuTab = 'counseling';
   let staffList = [], smsgs = [], sreads = [], dTab = 'patient', expanded = new Set();
-  const MENU_TABS = [['counseling','カウンセリング'],['director','院長特別外来'],['wisc','小児の知能検査']];
+  const MENU_TABS = [['counseling','カウンセリング'],['director','Dr.卓子 特別外来'],['wisc','小児の知能検査']];
   const menuOf = r => r.menu || 'counseling';
   const vrows = () => rows.filter(r => menuOf(r) === menuTab);
   // タブの数字：新着（未確認）・患者さんからの未読・スタッフ間の未読がある予約の件数
@@ -227,12 +227,12 @@
     $('mtabs').hidden = !canAll; if (!canAll) { menuTab = 'counseling'; return; }
     $('mtabs').innerHTML = MENU_TABS.map(([k, l]) => { const n = attention(k); return `<button type="button" data-mtab="${k}" aria-pressed="${menuTab === k}" style="--mc:${MENU_COLOR[k]}">${l}<span class="n ${n ? '' : 'zero'}">${n}</span></button>`; }).join('');
   }
-  // 院長特別外来は水曜日・1時間ごと（10,11,14,15,16,17時開始）
+  // Dr.卓子 特別外来は水曜日・1時間ごと（10,11,14,15,16,17時開始）
   const DIRECTOR_HOURS = [10, 11, 14, 15, 16, 17];
   const directorSlotOk = d => d.getDay() === 3 && d.getMinutes() === 0 && DIRECTOR_HOURS.includes(d.getHours());
   const counselors = () => staffList.filter(s => s.role === 'counselor' || s.role === 'director');
   const TABS = [['pending','新着'],['adjusting','調整中'],['approved','確定'],['declined','お断り'],['all','すべて']];
-  const MENU_JP = { counseling:'カウンセリング', director:'院長特別外来（自費）', wisc:'WISC-V（自費）' };
+  const MENU_JP = { counseling:'カウンセリング', director:'Dr.卓子 特別外来（自費）', wisc:'WISC-V（自費）' };
   const MENU_COLOR = { counseling:'#4F6B4A', director:'#8A5A6B', wisc:'#3E6C9C' };
   const mtag = r => `<span style="font-size:11px;font-weight:700;color:#fff;background:${MENU_COLOR[r.menu||'counseling']};border-radius:4px;padding:1px 6px;margin-right:6px">${MENU_JP[r.menu||'counseling']}</span>${r.via==='line'?'<span style="font-size:10px;font-weight:700;color:#fff;background:#06C755;border-radius:4px;padding:1px 5px;margin-right:6px">LINE</span>':''}${r.via==='staff'?'<span style="font-size:10px;font-weight:700;color:#2E332B;background:#E6E9E1;border-radius:4px;padding:1px 5px;margin-right:6px">スタッフ入力</span>':''}`;
   const LABEL = { pending:'新着', adjusting:'調整中', approved:'確定', declined:'お断り', cancelled:'キャンセル' };
@@ -351,7 +351,7 @@
       if (!v) { alert('日時を入力してください'); return; }
       if (!assigned && !confirm('担当カウンセラーが未選択です。このまま確定しますか？')) return;
       const at = new Date(v).toISOString();
-      if (rows.find(x => x.id === id)?.menu === 'director' && !directorSlotOk(new Date(v)) && !confirm('院長特別外来は水曜日の10・11・14・15・16・17時の枠です。この日時で確定しますか？')) return;
+      if (rows.find(x => x.id === id)?.menu === 'director' && !directorSlotOk(new Date(v)) && !confirm('Dr.卓子 特別外来は水曜日の10・11・14・15・16・17時の枠です。この日時で確定しますか？')) return;
       const rr = rows.find(x => x.id === id);
       if (!confirm(`${fmt(at)} で確定します。よろしいですか？\n${rr?.line_user_id ? '（患者さんのLINEに確定のお知らせが届きます）' : '（確定後、患者さんへ電話等でご連絡ください）'}`)) return;
       return update(id, { status: 'approved', confirmed_at: at, assigned_counselor: assigned, assigned_email: assignedEmail, decided_by: who, decided_at: new Date().toISOString() }, '確定しました。');
@@ -579,13 +579,13 @@
     if (!r.ok) { $('stErr').textContent = r.error || '追加できませんでした'; return; }
     $('stName').value = $('stId').value = $('stPw').value = ''; toast('カウンセラーを追加しました'); loadStaff();
   };
-  $('newBtn').onclick = () => { if ($('npMenu')) $('npMenu').value = menuTab; $('npCo').innerHTML = '<option value="">未定（院長特別外来は自動で院長）</option>' + counselors().map(c => `<option value="${esc(c.email)}">${esc(c.display_name)}</option>`).join(''); $('newPanel').hidden = false; $('npErr').textContent = ''; };
+  $('newBtn').onclick = () => { if ($('npMenu')) $('npMenu').value = menuTab; $('npCo').innerHTML = '<option value="">未定（Dr.卓子 特別外来は自動でDr.卓子）</option>' + counselors().map(c => `<option value="${esc(c.email)}">${esc(c.display_name)}</option>`).join(''); $('newPanel').hidden = false; $('npErr').textContent = ''; };
   $('npClose').onclick = () => { $('newPanel').hidden = true; };
   $('np').onsubmit = async (e) => {
     e.preventDefault(); $('npErr').textContent = '';
     const menu = $('npMenu').value, dt = $('npDt').value, name = $('npName').value.trim();
     if (!name || !dt) { $('npErr').textContent = 'お名前と日時を入力してください'; return; }
-    if (menu === 'director' && !directorSlotOk(new Date(dt)) && !confirm('院長特別外来は水曜日の10・11・14・15・16・17時の枠です。この日時で登録しますか？')) return;
+    if (menu === 'director' && !directorSlotOk(new Date(dt)) && !confirm('Dr.卓子 特別外来は水曜日の10・11・14・15・16・17時の枠です。この日時で登録しますか？')) return;
     const st = document.querySelector('input[name="npSt"]:checked').value, iso = new Date(dt).toISOString();
     const who = me?.display_name || me?.email;
     const coSel = $('npCo'), dir = staffList.find(x => x.role === 'director');
