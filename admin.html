@@ -59,7 +59,8 @@
   .viewtabs { display:flex; gap:8px; margin-bottom:12px; }
   .viewtabs button[aria-pressed="true"] { background:#2E332B; color:#fff; border-color:#2E332B; }
   .msgbtn .unread { background:#C0392B; color:#fff; border-radius:999px; padding:0 7px; font-size:11px; margin-left:4px; }
-  .drawer[hidden] { display:none !important; }
+  .drawer[hidden], .legend[hidden] { display:none !important; }
+  .grid { align-items:start; }
   .drawer { position:fixed; top:0; right:0; width:min(460px,100%); height:100vh; background:#fff; box-shadow:-10px 0 30px rgba(0,0,0,.15); display:flex; flex-direction:column; z-index:20; }
   .drawer header { background:#2E332B; }
   .thread { flex:1; overflow:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:#F7F8F4; }
