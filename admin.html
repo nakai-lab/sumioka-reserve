@@ -120,6 +120,7 @@
     <span id="who" style="font-size:12px;opacity:.9"></span>
     <span class="sp"></span>
     <button id="newBtn" type="button" style="background:#fff;color:#2E332B;font-weight:700">＋ 予約を入力</button>
+    <button id="lineBtn" type="button">LINE通知</button>
     <button id="staffBtn" type="button" hidden>スタッフ管理</button>
     <button id="notifyBtn" type="button">通知をオンにする</button>
     <button id="logout" type="button">ログアウト</button>
@@ -159,6 +160,25 @@
     <p id="npErr" style="color:#9A4A4A;font-size:13px;margin:0"></p>
     <p style="font-size:12px;color:var(--sub);margin:0">※電話や窓口で受けた予約の登録用です。LINEを使っていない方には、ここで登録した内容はLINEで届きません。</p>
   </form>
+</aside>
+<aside class="drawer" id="linePanel" hidden aria-label="LINE通知の設定">
+  <header><h1 style="font-size:16px">自分のLINEに通知を受け取る</h1><span class="sp"></span><button type="button" id="lpClose">閉じる</button></header>
+  <div style="padding:16px;overflow:auto;flex:1;line-height:1.8">
+    <p id="lpStatus" style="font-weight:700"></p>
+    <p style="font-size:13px;color:var(--sub)">担当の予約に変更やメッセージがあると、クリニック公式LINE（@734wokuo）から自分のLINEにお知らせが届きます。患者さんのお名前は表示されません。</p>
+    <ol style="font-size:14px;padding-left:20px">
+      <li>スマホのLINEで <strong>@734wokuo</strong> を友だち追加</li>
+      <li>下のボタンでコードを出す（10分間有効）</li>
+      <li>そのトークに、表示された文字をそのまま送る</li>
+    </ol>
+    <button class="primary" type="button" id="lpCode">コードを出す</button>
+    <div id="lpShow" hidden style="margin:14px 0;padding:14px;border-radius:12px;background:#F2F4EE;text-align:center">
+      <div style="font-size:12px;color:var(--sub)">LINEのトークに送る文字</div>
+      <div id="lpText" style="font-size:26px;font-weight:700;letter-spacing:.08em;margin:6px 0"></div>
+      <button type="button" id="lpCopy">コピー</button>
+    </div>
+    <button type="button" id="lpUnlink" style="margin-top:16px" hidden>LINE通知をやめる</button>
+  </div>
 </aside>
 <aside class="drawer" id="staffPanel" hidden aria-label="スタッフ管理">
   <header><h1 style="font-size:16px">スタッフ管理</h1><span class="sp"></span><button type="button" id="stClose">閉じる</button></header>
@@ -515,6 +535,18 @@
       box.append(row);
     });
   }
+  async function refreshMe() { const { data } = await sb.from('staff').select('*').eq('email', myEmail()).maybeSingle(); if (data) me = data; }
+  function lineStatus() { $('lpStatus').textContent = me?.line_user_id ? '✓ LINE通知は設定済みです' : 'まだLINE通知は設定されていません'; $('lpStatus').style.color = me?.line_user_id ? '#2F7D4A' : '#9A4A4A'; $('lpUnlink').hidden = !me?.line_user_id; }
+  $('lineBtn').onclick = async () => { await refreshMe(); lineStatus(); $('lpShow').hidden = true; $('linePanel').hidden = false; };
+  $('lpClose').onclick = () => { $('linePanel').hidden = true; };
+  $('lpCode').onclick = async () => {
+    const { data, error } = await sb.rpc('create_line_link_code');
+    if (error) { alert('コードを出せませんでした：' + error.message); return; }
+    $('lpText').textContent = `スタッフ連携 ${data}`; $('lpShow').hidden = false;
+    const t0 = Date.now(), poll = setInterval(async () => { await refreshMe(); lineStatus(); if (me?.line_user_id || Date.now() - t0 > 600000) { clearInterval(poll); if (me?.line_user_id) { $('lpShow').hidden = true; toast('LINE通知を設定しました'); } } }, 4000);
+  };
+  $('lpCopy').onclick = async () => { try { await navigator.clipboard.writeText($('lpText').textContent); toast('コピーしました'); } catch { toast('コピーできませんでした。手で入力してください'); } };
+  $('lpUnlink').onclick = async () => { if (!confirm('LINE通知をやめますか？')) return; await sb.rpc('unlink_my_line'); await refreshMe(); lineStatus(); toast('LINE通知をやめました'); };
   $('staffBtn').onclick = () => { $('staffPanel').hidden = false; loadStaff(); };
   $('stClose').onclick = () => { $('staffPanel').hidden = true; };
   $('stAdd').onsubmit = async (e) => {
